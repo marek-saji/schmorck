@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@saji/yorck-alt",
+  "description": "Alternative UI for https://yorck.de",
+  "keywords": ["berlin", "cinema", "yorck", "showtimes"],
+  "author": {
+    "name": "Marek ‘saji’ Augustynowicz",
+    "url": "https://mastodon.social/@saji"
+  },
+  "homepage": "https://github.com/marek-saji/yorck-alt",
+  "bugs": {
+    "url": "https://github.com/marek-saji/yorck-alt/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:marek-saji/yorck-alt.git"
+  },
+  "version": "1.0.0-0",
+  "license": "ISC",
+  "scripts": {
+    "start": "echo 'Error: not implemented' && exit 1",
+    "dev": "echo 'Error: not implemented' && exit 1",
+    "test": "echo 'Error: not implemented' && exit 1"
+  },
+  "dependencies": {}
+}
