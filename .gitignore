@@ -1,0 +1,11 @@
+# deps
+/node_modules
+
+# logs
+*.log
+
+# local files
+*.local
+
+# temporary files
+/.superpowers
