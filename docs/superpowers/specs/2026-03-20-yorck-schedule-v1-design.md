@@ -105,7 +105,7 @@ All movies currently showing, sorted by earliest upcoming screening (soonest fir
 
 Clicking a movie title navigates to its detail page.
 
-### `GET /movies/:id` — Movie Detail
+### `GET /movies/:slug` — Movie Detail
 
 Full movie information:
 
