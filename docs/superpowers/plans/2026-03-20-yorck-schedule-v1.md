@@ -1008,74 +1008,96 @@ git commit -m "feat: add stylesheet with design tokens and base styles"
 
 - [ ] **Step 1: Write integration tests**
 
-Test that the server responds correctly to requests with mock data. Since we can't hit the real Yorck API in tests, the test should pre-populate the cache with fixture data and verify HTML responses.
+True end-to-end: mock `global.fetch` to return Vista OData responses, mock `lib/env.ts`, start the actual server, and make HTTP requests to it. Tests the full chain: fetch mock → yorck-client mapping → cache → server routing → template rendering.
 
 ```typescript
-import { describe, it } from 'node:test';
+import { describe, it, mock, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import type { ScheduleData } from './types.ts';
 
-// Test fixture
-const fixture: ScheduleData = {
-  cinemas: [{ id: '0000000001', name: 'Delphi LUX', address: 'Kantstraße 10', city: 'Berlin' }],
-  films: [{
-    id: 'HO00004842', title: 'Anora',
-    runTime: '139', rating: 'FSK 16',
-    cast: ['Mikey Madison', 'Mark Eydelshteyn'],
-  }],
-  screenings: [{
-    id: 'sess-1', scheduledFilmId: 'HO00004842', cinemaId: '0000000001',
-    showtime: new Date(Date.now() + 3600000), // 1 hour from now
-    screenName: 'Saal 1', screenNumber: 1,
-    seatsAvailable: 42, soldoutStatus: 0,
-    attributes: ['OmU'],
-  }],
-  fetchedAt: new Date(),
+// Vista OData fixtures (raw API shapes)
+const vistaFixtures = {
+  cinemas: { value: [{ ID: '0000000001', Name: 'Delphi LUX', Address1: 'Kantstraße 10', City: 'Berlin', Latitude: 52.505, Longitude: 13.325 }] },
+  films: { value: [{
+    ScheduledFilmId: 'HO00004842', Title: 'Anora', Synopsis: 'A young woman from Brooklyn...',
+    RunTime: '139', Rating: 'FSK 16', TrailerUrl: 'https://www.youtube.com/watch?v=abc',
+    Cast: [
+      { FirstName: 'Mikey', LastName: 'Madison', PersonType: 'Actor' },
+      { FirstName: 'Mark', LastName: 'Eydelshteyn', PersonType: 'Actor' },
+    ],
+  }] },
+  sessions: { value: [{
+    SessionId: 'sess-1', ScheduledFilmId: 'HO00004842', CinemaId: '0000000001',
+    Showtime: new Date(Date.now() + 3_600_000).toISOString(),
+    ScreenName: 'Saal 1', ScreenNumber: 1, SeatsAvailable: 42, SoldoutStatus: 0,
+    SessionAttributesNames: ['OmU'],
+  }] },
 };
 
-describe('Server routes', () => {
-  // NOTE: These tests will need the server refactored to accept
-  // an injected cache (instead of module-level singleton) for clean testing.
-  // For now, test templates directly as a unit test.
+// Mock env vars and global.fetch before importing server
+mock.module('./lib/env.ts', {
+  namedExports: {
+    YORCK_VISTA_API_KEY: 'test-key',
+    YORCK_VISTA_API_URL: 'https://example.com/',
+  },
+});
 
-  it('home template renders films', async () => {
-    const { homePage } = await import('./templates/home.ts');
-    const html = homePage({ data: fixture, stale: false });
+const originalFetch = global.fetch;
+global.fetch = async (input: RequestInfo | URL) => {
+  const url = String(input);
+  if (url.includes('OData.svc/Cinemas')) return Response.json(vistaFixtures.cinemas);
+  if (url.includes('OData.svc/ScheduledFilms')) return Response.json(vistaFixtures.films);
+  if (url.includes('OData.svc/Sessions')) return Response.json(vistaFixtures.sessions);
+  return new Response('Not found', { status: 404 });
+};
+
+// Import server after mocks are set up — server starts listening on import
+const { server } = await import('./server.ts');
+
+// Wait for server to be listening, then get the assigned port
+const baseUrl = await new Promise<string>(resolve => {
+  server.on('listening', () => {
+    const addr = server.address();
+    if (typeof addr === 'object' && addr) resolve(`http://localhost:${addr.port}`);
+  });
+  // If already listening
+  const addr = server.address();
+  if (typeof addr === 'object' && addr) resolve(`http://localhost:${addr.port}`);
+});
+
+after(() => {
+  server.close();
+  global.fetch = originalFetch;
+});
+
+describe('Integration', () => {
+  it('GET / renders home page with films', async () => {
+    const res = await originalFetch(baseUrl);
+    assert.equal(res.status, 200);
+    const html = await res.text();
     assert.ok(html.includes('Anora'));
     assert.ok(html.includes('Delphi LUX'));
     assert.ok(html.includes('OmU'));
     assert.ok(html.includes('/films/HO00004842'));
-    assert.ok(html.includes('id="banner" class="banner" hidden'), 'banner should have hidden attribute when not stale');
   });
 
-  it('home template shows stale banner', async () => {
-    const { homePage } = await import('./templates/home.ts');
-    const html = homePage({ data: fixture, stale: true });
-    assert.ok(html.includes('id="banner" class="banner">'), 'banner should not have hidden attribute when stale');
-    assert.ok(html.includes('might be out of date'));
-  });
-
-  it('film template renders details', async () => {
-    const { filmPage } = await import('./templates/film.ts');
-    const html = filmPage({
-      film: fixture.films[0],
-      screenings: fixture.screenings,
-      cinemas: fixture.cinemas,
-      stale: false,
-    });
+  it('GET /films/:id renders film detail', async () => {
+    const res = await originalFetch(`${baseUrl}/films/HO00004842`);
+    assert.equal(res.status, 200);
+    const html = await res.text();
     assert.ok(html.includes('Anora'));
     assert.ok(html.includes('Mikey Madison'));
     assert.ok(html.includes('139 min'));
     assert.ok(html.includes('OmU'));
   });
 
-  it('home template handles empty schedule', async () => {
-    const { homePage } = await import('./templates/home.ts');
-    const emptyData: ScheduleData = {
-      cinemas: [], films: [], screenings: [], fetchedAt: new Date(),
-    };
-    const html = homePage({ data: emptyData, stale: false });
-    assert.ok(html.includes('No upcoming screenings'));
+  it('GET /films/:id returns 404 for unknown film', async () => {
+    const res = await originalFetch(`${baseUrl}/films/nonexistent`);
+    assert.equal(res.status, 404);
+  });
+
+  it('GET /unknown returns 404', async () => {
+    const res = await originalFetch(`${baseUrl}/unknown`);
+    assert.equal(res.status, 404);
   });
 });
 ```
