@@ -1006,7 +1006,7 @@ git commit -m "feat: add stylesheet with design tokens and base styles"
 **Files:**
 - Create: `src/server.test.ts`
 
-- [ ] **Step 1: Write integration tests**
+- [x] **Step 1: Write integration tests**
 
 True end-to-end: mock `global.fetch` to return Vista OData responses, mock `lib/env.ts`, start the actual server, and make HTTP requests to it. Tests the full chain: fetch mock → yorck-client mapping → cache → server routing → template rendering.
 
@@ -1102,17 +1102,17 @@ describe('Integration', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they pass**
+- [x] **Step 2: Run tests to verify they pass**
 
-Run: `node --test src/server.test.ts`
+Run: `node --experimental-test-module-mocks --test src/server.test.ts`
 Expected: All 4 tests PASS
 
-- [ ] **Step 3: Run all tests**
+- [x] **Step 3: Run all tests**
 
 Run: `node --test src/**/*.test.ts`
 Expected: All tests across all files PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/server.test.ts
