@@ -39,7 +39,7 @@ function filmPage({ film, screenings, cinemas, stale, date }: FilmPageOptions): 
     const isoDate = s.showtime.toISOString().slice(0, 10);
     let group = byDate.get(isoDate);
     if (!group) {
-      const formatted = s.showtime.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+      const formatted = s.showtime.toLocaleDateString('en-150', { weekday: 'long', day: 'numeric', month: 'long' });
       const prefix = isoDate === todayIso ? 'Today — ' : isoDate === tomorrowIso ? 'Tomorrow — ' : '';
       group = { label: prefix + formatted, screenings: [] };
       byDate.set(isoDate, group);
@@ -53,7 +53,7 @@ function filmPage({ film, screenings, cinemas, stale, date }: FilmPageOptions): 
         const highlighted = isoDate === date;
         const times = items.map(s => {
           const cinema = cinemaMap.get(s.cinemaId);
-          const time = s.showtime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+          const time = s.showtime.toLocaleTimeString('en-150', { hour: '2-digit', minute: '2-digit' });
           const attrs = s.attributes?.length ? ` ${s.attributes.map(escapeHtml).join(' ')}` : '';
           const href = `https://www.yorck.de/de/films/${escapeHtml(film.slug)}?date=${isoDate}#view_screening_times`;
           return `<a href="${href}" class="screening"><strong class="screening-time">${time}</strong>${attrs ? `<span class="screening-attrs">${attrs}</span>` : ''}${cinema ? `<span class="screening-cinema">${escapeHtml(cinema.name)}</span>` : ''}</a>`;

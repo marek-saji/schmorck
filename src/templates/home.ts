@@ -26,7 +26,7 @@ function homePage({ data, stale }: HomeOptions): string {
     const isoDate = s.showtime.toISOString().slice(0, 10);
     let dateGroup = byDate.get(isoDate);
     if (!dateGroup) {
-      const formatted = s.showtime.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+      const formatted = s.showtime.toLocaleDateString('en-150', { weekday: 'long', day: 'numeric', month: 'long' });
       const prefix = isoDate === todayIso ? 'Today — ' : isoDate === tomorrowIso ? 'Tomorrow — ' : '';
       dateGroup = { label: prefix + formatted, films: new Map() };
       byDate.set(isoDate, dateGroup);
@@ -75,7 +75,7 @@ function filmCard(
 
   const screeningItems = screenings.map(s => {
     const cinema = cinemaMap.get(s.cinemaId);
-    const time = s.showtime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const time = s.showtime.toLocaleTimeString('en-150', { hour: '2-digit', minute: '2-digit' });
     const date = s.showtime.toISOString().slice(0, 10);
     const attrs = s.attributes?.length ? ` ${s.attributes.map(escapeHtml).join(' ')}` : '';
     const href = `https://www.yorck.de/de/films/${escapeHtml(film.slug)}?date=${date}#view_screening_times`;
