@@ -9,9 +9,13 @@ interface Cinema {
 
 interface Film {
   id: string;
+  slug: string;
   title: string;
+  posterUrl: string;
   synopsis?: string;
   runTime?: string;
+  directors?: string[];
+  writers?: string[];
   cast?: string[];
   rating?: string;
   openingDate?: string;

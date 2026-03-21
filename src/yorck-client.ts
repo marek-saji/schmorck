@@ -1,5 +1,6 @@
 import type { Cinema, Film, Screening, ScheduleData } from './types.ts';
 import { YORCK_VISTA_API_URL, YORCK_VISTA_API_KEY } from './lib/env.ts';
+import { slugify } from './lib/slug.ts';
 
 interface VistaFilmPerson {
   FirstName?: string;
@@ -26,6 +27,7 @@ interface VistaScheduledFilm {
   Rating?: string;
   OpeningDate?: string;
   TrailerUrl?: string;
+  GraphicUrl?: string;
 }
 
 interface VistaSession {
@@ -60,16 +62,26 @@ function mapApiResponse(raw: RawApiData): ScheduleData {
     longitude: c.Longitude,
   }));
 
-  const films: Film[] = raw.films.map(f => ({
-    id: f.ScheduledFilmId,
-    title: f.Title,
-    synopsis: f.Synopsis,
-    runTime: f.RunTime,
-    cast: f.Cast?.map(p => `${p.FirstName} ${p.LastName}`.trim()),
-    rating: f.Rating,
-    openingDate: f.OpeningDate,
-    trailerUrl: f.TrailerUrl,
-  }));
+  const filmsById = new Map<string, Film>();
+  for (const f of raw.films) {
+    if (!filmsById.has(f.ScheduledFilmId)) {
+      filmsById.set(f.ScheduledFilmId, {
+        id: f.ScheduledFilmId,
+        slug: slugify(f.Title),
+        title: f.Title,
+        posterUrl: f.GraphicUrl || `/films/${slugify(f.Title)}/poster`,
+        synopsis: f.Synopsis,
+        runTime: f.RunTime,
+        directors: f.Cast?.filter(p => p.PersonType === 'Director').map(p => `${p.FirstName} ${p.LastName}`.trim()),
+        writers: f.Cast?.filter(p => p.PersonType === 'Writer').map(p => `${p.FirstName} ${p.LastName}`.trim()),
+        cast: f.Cast?.filter(p => p.PersonType === 'Actor').map(p => `${p.FirstName} ${p.LastName}`.trim()),
+        rating: f.Rating,
+        openingDate: f.OpeningDate,
+        trailerUrl: f.TrailerUrl,
+      });
+    }
+  }
+  const films = [...filmsById.values()];
 
   const screenings: Screening[] = raw.sessions.map(s => ({
     id: s.SessionId,
@@ -87,6 +99,7 @@ function mapApiResponse(raw: RawApiData): ScheduleData {
 }
 
 const API_HEADERS: HeadersInit = {
+  'Accept': 'application/json',
   'Content-Type': 'application/json',
   'ConnectApiToken': YORCK_VISTA_API_KEY,
 };
@@ -105,6 +118,9 @@ async function fetchSchedule(): Promise<ScheduleData> {
     fetchJson<VistaODataResponse<VistaScheduledFilm>>('OData.svc/ScheduledFilms'),
     fetchJson<VistaODataResponse<VistaSession>>('OData.svc/Sessions'),
   ]);
+  console.debug('SESSIONS', sessions.value);
+  console.debug('FILMS', films.value);
+  console.debug('CINEMAS', cinemas.value);
   return mapApiResponse({
     cinemas: cinemas.value,
     films: films.value,

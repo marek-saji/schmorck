@@ -2,14 +2,13 @@ import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
 import { readFile } from 'node:fs/promises';
 import { join, extname } from 'node:path';
-import { YORCK_VISTA_API_URL } from './lib/env.ts';
+import { YORCK_VISTA_API_URL, PORT, APP_URL } from './lib/env.ts';
 import { Cache } from './cache.ts';
 import { fetchSchedule } from './yorck-client.ts';
 import { homePage } from './templates/home.ts';
 import { filmPage } from './templates/film.ts';
 import type { ScheduleData } from './types.ts';
 
-const PORT = parseInt(process.env.PORT ?? '3000', 10);
 const TTL_MS = parseInt(process.env.CACHE_TTL_MS ?? String(15 * 60_000), 10);
 const PUBLIC_DIR = join(import.meta.dirname, '..', 'public');
 
@@ -41,7 +40,8 @@ function triggerRefreshIfStale(): void {
 }
 
 const server = createServer(async (req, res) => {
-  const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+  console.log(req.method, req.url);
+  const url = new URL(req.url ?? '/', APP_URL);
 
   try {
     // SSE endpoint
@@ -102,11 +102,19 @@ const server = createServer(async (req, res) => {
     }
 
     // Poster proxy — streams upstream image or serves fallback
-    const posterMatch = url.pathname.match(/^\/posters\/([^/]+)$/);
+    const posterMatch = url.pathname.match(/^\/films\/([^/]+)\/poster$/);
     if (posterMatch) {
-      const filmId = posterMatch[1];
+      const slug = posterMatch[1];
+      const film = data?.films.find(f => f.slug === slug);
+      if (!film) {
+        const fallback = await readFile(join(PUBLIC_DIR, 'poster-fallback.svg'));
+        res.writeHead(404, { 'Content-Type': 'image/svg+xml' });
+        res.end(fallback);
+        return;
+      }
       try {
-        const upstream = await fetch(new URL(`CDN/media/entity/get/Movies/${filmId}`, YORCK_VISTA_API_URL));
+        const posterUrl = new URL(`/CDN/media/entity/get/Movies/${film.id}`, YORCK_VISTA_API_URL);
+        const upstream = await fetch(posterUrl);
         if (upstream.ok && upstream.body) {
           res.writeHead(200, {
             'Content-Type': upstream.headers.get('Content-Type') ?? 'image/jpeg',
@@ -131,8 +139,8 @@ const server = createServer(async (req, res) => {
         res.end('<html><body><h1>Schedule currently unavailable</h1></body></html>');
         return;
       }
-      const filmId = filmMatch[1];
-      const film = data.films.find(f => f.id === filmId);
+      const slug = filmMatch[1];
+      const film = data.films.find(f => f.slug === slug);
       if (!film) {
         res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end('<html><body><h1>Film not found</h1></body></html>');
@@ -156,7 +164,7 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Listening on http://localhost:${PORT}`);
+  console.log(`Listening on ${APP_URL}`);
 });
 
 export { server };

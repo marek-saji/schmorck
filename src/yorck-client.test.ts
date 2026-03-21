@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 mock.module('./lib/env.ts', {
   namedExports: {
     YORCK_VISTA_API_KEY: 'test-key',
-    YORCK_VISTA_API_URL: 'https://example.com/',
+    YORCK_VISTA_API_URL: 'https://vista-yorck.test/',
   },
 });
 
@@ -43,7 +43,9 @@ describe('mapApiResponse', () => {
     };
     const result = mapApiResponse(structuredClone(raw));
     assert.equal(result.films[0].title, 'Anora');
-    assert.deepEqual(result.films[0].cast, ['Mikey Madison', 'Sean Baker']);
+    assert.equal(result.films[0].slug, 'anora');
+    assert.deepEqual(result.films[0].cast, ['Mikey Madison']);
+    assert.deepEqual(result.films[0].directors, ['Sean Baker']);
     assert.equal(raw.films[0].Title, 'Anora', 'should not mutate input');
   });
 

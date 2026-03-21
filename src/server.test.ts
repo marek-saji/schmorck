@@ -24,7 +24,9 @@ const vistaFixtures = {
 mock.module('./lib/env.ts', {
   namedExports: {
     YORCK_VISTA_API_KEY: 'test-key',
-    YORCK_VISTA_API_URL: 'https://example.com/',
+    YORCK_VISTA_API_URL: 'https://vista-yorck.test/',
+    PORT: 0,
+    APP_URL: 'http://yorck.test',
   },
 });
 
@@ -35,12 +37,9 @@ mock.method(globalThis, 'fetch', async (input: RequestInfo | URL) => {
   if (url.includes('OData.svc/Cinemas')) return Response.json(vistaFixtures.cinemas);
   if (url.includes('OData.svc/ScheduledFilms')) return Response.json(vistaFixtures.films);
   if (url.includes('OData.svc/Sessions')) return Response.json(vistaFixtures.sessions);
-  if (url.includes('CDN/media/entity/get/Movies/')) return new Response('Not found', { status: 404 });
+  if (url.includes('/CDN/media/entity/get/Movies/')) return new Response('Not found', { status: 404 });
   return new Response('Not found', { status: 404 });
 });
-
-// Use random port for tests
-process.env.PORT = '0';
 
 const { server } = await import('./server.ts');
 
@@ -69,11 +68,11 @@ describe('Integration', () => {
     assert.ok(html.includes('Anora'));
     assert.ok(html.includes('Delphi LUX'));
     assert.ok(html.includes('OmU'));
-    assert.ok(html.includes('/films/HO00004842'));
+    assert.ok(html.includes('/films/anora'));
   });
 
-  it('GET /films/:id renders film detail', async () => {
-    const res = await originalFetch(`${baseUrl}/films/HO00004842`);
+  it('GET /films/:slug renders film detail', async () => {
+    const res = await originalFetch(`${baseUrl}/films/anora`);
     assert.equal(res.status, 200);
     const html = await res.text();
     assert.ok(html.includes('Anora'));
