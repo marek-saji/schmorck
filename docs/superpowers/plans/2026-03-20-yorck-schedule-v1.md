@@ -53,14 +53,14 @@ The plan below uses **placeholder API shapes**. After API discovery, Task 2 (yor
 - Create: `tsconfig.json`
 - Modify: `package.json`
 
-- [ ] **Step 1: Create `.gitignore`**
+- [x] **Step 1: Create `.gitignore`**
 
 ```
 node_modules/
 .superpowers/
 ```
 
-- [ ] **Step 2: Create `tsconfig.json`**
+- [x] **Step 2: Create `tsconfig.json`**
 
 ```json
 {
@@ -77,7 +77,7 @@ node_modules/
 }
 ```
 
-- [ ] **Step 3: Update `package.json` scripts**
+- [x] **Step 3: Update `package.json` scripts**
 
 ```json
 {
@@ -92,12 +92,12 @@ node_modules/
 
 Add `"type": "module"` for ESM. No dependencies needed yet.
 
-- [ ] **Step 4: Verify setup**
+- [x] **Step 4: Verify setup**
 
 Run: `node -e "console.log('ok')"`
 Expected: `ok` (confirms Node 24 is active)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .gitignore tsconfig.json package.json

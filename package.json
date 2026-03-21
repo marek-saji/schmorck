@@ -17,13 +17,14 @@
   },
   "version": "1.0.0-0",
   "license": "ISC",
+  "type": "module",
   "engines": {
     "node": ">=24.0.0"
   },
   "scripts": {
-    "start": "echo 'Error: not implemented' && exit 1",
-    "dev": "echo 'Error: not implemented' && exit 1",
-    "test": "echo 'Error: not implemented' && exit 1"
+    "start": "node src/server.ts",
+    "dev": "node --watch src/server.ts",
+    "test": "node --test 'src/**/*.test.ts'"
   },
   "dependencies": {}
 }
