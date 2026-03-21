@@ -9,7 +9,9 @@ import { homePage } from './templates/home.ts';
 import { filmPage } from './templates/film.ts';
 import type { ScheduleData } from './types.ts';
 
+const CACHING_ENABLED = NODE_ENV !== 'development' && !!COMMIT_SHA;
 const STATIC_MAX_AGE_S = 30 * 24 * 60 * 60; // 1 month
+const HTML_MAX_AGE_S = 5 * 60; // 5 minutes
 const TTL_MS = parseInt(process.env.CACHE_TTL_MS ?? String(15 * 60_000), 10);
 const PUBLIC_DIR = join(import.meta.dirname, '..', 'public');
 
@@ -65,7 +67,7 @@ const server = createServer(async (req, res) => {
         const content = await readFile(filePath);
         const mime = MIME_TYPES[extname(filePath)] ?? 'application/octet-stream';
         const headers: HeadersInit = { 'Content-Type': mime };
-        if (NODE_ENV !== 'development' && COMMIT_SHA) {
+        if (CACHING_ENABLED) {
           headers['ETag'] = `"${COMMIT_SHA}"`;
           headers['Cache-Control'] = `public, max-age=${STATIC_MAX_AGE_S}, immutable`;
         }
@@ -100,7 +102,12 @@ const server = createServer(async (req, res) => {
         res.end('<html><body><h1>Schedule currently unavailable</h1><p>Please try again shortly.</p></body></html>');
         return;
       }
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      const htmlHeaders: HeadersInit = { 'Content-Type': 'text/html; charset=utf-8' };
+      if (CACHING_ENABLED && entry) {
+        htmlHeaders['ETag'] = `"${entry.fetchedAt.getTime()}"`;
+        htmlHeaders['Cache-Control'] = `public, max-age=${HTML_MAX_AGE_S}, must-revalidate`;
+      }
+      res.writeHead(200, htmlHeaders);
       res.end(homePage({ data, stale }));
       return;
     }
@@ -152,7 +159,12 @@ const server = createServer(async (req, res) => {
       }
       const filmScreenings = data.screenings.filter(s => s.scheduledFilmId === film.id);
       const date = url.searchParams.get('date') ?? undefined;
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      const htmlHeaders: HeadersInit = { 'Content-Type': 'text/html; charset=utf-8' };
+      if (CACHING_ENABLED && entry) {
+        htmlHeaders['ETag'] = `"${entry.fetchedAt.getTime()}"`;
+        htmlHeaders['Cache-Control'] = `public, max-age=${HTML_MAX_AGE_S}, must-revalidate`;
+      }
+      res.writeHead(200, htmlHeaders);
       res.end(filmPage({ film, screenings: filmScreenings, cinemas: data.cinemas, stale, date }));
       return;
     }
@@ -170,6 +182,7 @@ const server = createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Listening on ${APP_URL}`);
+  console.log(`Caching: ${CACHING_ENABLED ? `enabled (${COMMIT_SHA})` : 'disabled'}`);
 });
 
 export { server };
