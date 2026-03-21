@@ -974,7 +974,7 @@ git commit -m "feat: add client-side SSE for cache update notifications"
 **Files:**
 - Create: `public/styles.css`
 
-- [ ] **Step 1: Create stylesheet with design tokens and base styles**
+- [x] **Step 1: Create stylesheet with design tokens and base styles**
 
 Define the full token system and enough base styles to make the pages functional. Visual polish is deferred — focus on structure and readability.
 
@@ -992,7 +992,7 @@ The stylesheet should include:
 
 **Note:** Exact values to be determined during implementation. The visual direction was deferred — start with a clean, functional baseline.
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add public/styles.css
