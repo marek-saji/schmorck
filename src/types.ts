@@ -34,7 +34,6 @@ interface ScheduleData {
   cinemas: Cinema[];
   films: Film[];
   screenings: Screening[];
-  fetchedAt: Date;
 }
 
 export type { Cinema, Film, Screening, ScheduleData };
