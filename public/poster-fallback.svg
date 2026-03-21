@@ -1,6 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" fill="none">
-  <rect width="200" height="300" fill="#1a1a2e" rx="4"/>
-  <circle cx="100" cy="120" r="30" stroke="#4a4a6a" stroke-width="2"/>
-  <path d="M90 110 L115 125 L90 140Z" fill="#4a4a6a"/>
-  <text x="100" y="200" text-anchor="middle" fill="#4a4a6a" font-family="system-ui" font-size="14">No poster</text>
+  <style>
+    :root { --bg: #1a1a2e; --fg: #4a4a6a; }
+    @media (prefers-color-scheme: light) {
+      :root { --bg: #e8e8ed; --fg: #b0b0c0; }
+    }
+  </style>
+  <rect width="200" height="300" fill="var(--bg)" rx="4"/>
+  <!-- Film strip -->
+  <rect x="60" y="80" width="80" height="120" rx="3" stroke="var(--fg)" stroke-width="2"/>
+  <!-- Sprocket holes left -->
+  <rect x="65" y="88" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <rect x="65" y="102" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <rect x="65" y="116" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <rect x="65" y="130" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <rect x="65" y="144" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <rect x="65" y="158" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <rect x="65" y="172" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <rect x="65" y="186" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <!-- Sprocket holes right -->
+  <rect x="127" y="88" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <rect x="127" y="102" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <rect x="127" y="116" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <rect x="127" y="130" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <rect x="127" y="144" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <rect x="127" y="158" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <rect x="127" y="172" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <rect x="127" y="186" width="8" height="6" rx="1" fill="var(--fg)"/>
+  <!-- Frame lines -->
+  <line x1="78" y1="108" x2="122" y2="108" stroke="var(--fg)" stroke-width="1"/>
+  <line x1="78" y1="140" x2="122" y2="140" stroke="var(--fg)" stroke-width="1"/>
+  <line x1="78" y1="172" x2="122" y2="172" stroke="var(--fg)" stroke-width="1"/>
 </svg>
