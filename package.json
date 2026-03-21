@@ -27,8 +27,8 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "start": "node src/server.ts",
-    "dev": "node --watch src/server.ts",
+    "start": "node --env-file-if-exists=.env.local src/server.ts",
+    "dev": "node --env-file-if-exists=.env.local --watch src/server.ts",
     "lint": "tsgo --noEmit",
     "test": "node --experimental-test-module-mocks --test 'src/**/*.test.ts'"
   },
