@@ -285,14 +285,32 @@ a.screening:hover {
   border-radius: var(--radius-md);
 }
 
-.film-detail-info h1 {
+.film-detail .screenings {
+  grid-column: 1 / -1;
+}
+
+.film-detail-title {
+  grid-column: 1 / -1;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--spacing-md) 0 var(--spacing-sm);
+  margin: 0 0 calc(var(--spacing-md) - var(--spacing-sm));
+  background: var(--color-bg);
   font-size: var(--font-size-2xl);
+  text-box: trim-both cap alphabetic;
 }
 
 .film-synopsis {
   margin: var(--spacing-md) 0;
   color: var(--color-text-muted);
   line-height: var(--line-height-base);
+}
+
+.yorck-link-icon {
+  height: 1.5em;
+  width: auto;
+  filter: drop-shadow(0 0 0.075em var(--color-text-muted));
 }
 
 .screening-date {
@@ -337,8 +355,8 @@ a.screening:hover {
   }
 
   .film-poster-large {
-    width: 100%;
-    max-width: 18.75em;
+    max-height: 50svh;
+    width: auto;
     margin: 0 auto;
   }
 }

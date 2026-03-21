@@ -61,12 +61,13 @@ function filmPage({ film, screenings, cinemas, stale }: FilmPageOptions): string
       }).join('\n');
 
   const body = `<article class="film-detail">
+  <h1 class="film-detail-title">${escapeHtml(film.title)}</h1>
   ${poster}
   <div class="film-detail-info">
-    <h1>${escapeHtml(film.title)}</h1>
     ${meta ? `<p class="film-meta">${escapeHtml(meta)}</p>` : ''}
     ${credits}
     ${film.synopsis ? `<div class="film-synopsis">${escapeHtml(film.synopsis)}</div>` : ''}
+    <p><a href="https://www.yorck.de/de/films/${escapeHtml(film.slug)}"><img src="/yorck.svg" alt="View on yorck.de" class="yorck-link-icon"></a></p>
   </div>
   <section class="screenings">
     <h2>Screenings</h2>

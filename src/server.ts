@@ -58,10 +58,8 @@ const server = createServer(async (req, res) => {
     }
 
     // Static files
-    if (url.pathname.startsWith('/public/') || url.pathname === '/styles.css' || url.pathname === '/main.mjs') {
-      const filePath = url.pathname.startsWith('/public/')
-        ? join(PUBLIC_DIR, url.pathname.slice('/public/'.length))
-        : join(PUBLIC_DIR, url.pathname.slice(1));
+    if (extname(url.pathname) in MIME_TYPES) {
+      const filePath = join(PUBLIC_DIR, url.pathname.slice(1));
       try {
         const content = await readFile(filePath);
         const mime = MIME_TYPES[extname(filePath)] ?? 'application/octet-stream';
