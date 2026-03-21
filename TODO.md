@@ -8,6 +8,7 @@
       and `SynopsisAlt` fields which contain English translations.
 - [ ] Display info about specials (e.g. marathons, previews, events).
       Check `CinemaEvents` endpoint or session attributes for special
-      screening types.
+      screening types. Some screenings only have a `yorck.de/de/specials/…`
+      page (no `/films/…` equivalent) — detect these and link correctly.
 - [ ] Look up films on Trakt and Letterboxd. Store lookups somewhere
       (file-based cache or SQLite) to avoid repeated requests.

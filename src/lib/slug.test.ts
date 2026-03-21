@@ -23,4 +23,13 @@ describe('slugify', () => {
   it('collapses multiple dashes', () => {
     assert.equal(slugify('a   b   c'), 'a-b-c');
   });
+
+  it('strips diacritics from non-german letters', () => {
+    assert.equal(slugify('Amélie à Zürich'), 'amelie-a-zurich');
+    assert.equal(slugify('České prázdniny'), 'ceske-prazdniny');
+  });
+
+  it('replaces & with and', () => {
+    assert.equal(slugify('Tom & Jerry'), 'tom-and-jerry');
+  });
 });
