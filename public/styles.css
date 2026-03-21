@@ -307,7 +307,14 @@ a.screening:hover {
   line-height: var(--line-height-base);
 }
 
-.yorck-link-icon {
+.film-links {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+  margin: var(--spacing-md) 0;
+}
+
+.film-link-icon {
   height: 1.5em;
   width: auto;
   filter: drop-shadow(0 0 0.075em var(--color-text-muted));

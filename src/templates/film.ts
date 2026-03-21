@@ -67,7 +67,11 @@ function filmPage({ film, screenings, cinemas, stale }: FilmPageOptions): string
     ${meta ? `<p class="film-meta">${escapeHtml(meta)}</p>` : ''}
     ${credits}
     ${film.synopsis ? `<div class="film-synopsis">${escapeHtml(film.synopsis)}</div>` : ''}
-    <p><a href="https://www.yorck.de/de/films/${escapeHtml(film.slug)}"><img src="/yorck.svg" alt="View on yorck.de" class="yorck-link-icon"></a></p>
+    <nav class="film-links">
+      <a href="https://www.yorck.de/de/films/${escapeHtml(film.slug)}"><img src="/yorck.svg" alt="View on Yorck.de" class="film-link-icon"></a>
+      <a href="https://letterboxd.com/search/${encodeURIComponent(film.title)}/"><img src="/letterboxd.svg" alt="Search on Letterboxd" class="film-link-icon"></a>
+      <a href="https://app.trakt.tv/search?${new URLSearchParams({ m: 'movie', q: film.title })}"><img src="/trakt.svg" alt="Search on Trakt.tv" class="film-link-icon"></a>
+    </nav>
   </div>
   <section class="screenings">
     <h2>Screenings</h2>
