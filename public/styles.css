@@ -43,7 +43,7 @@
   --font-size-base: 1rem;
   --font-size-lg: 1.25rem;
   --font-size-xl: 1.5rem;
-  --font-size-2xl: 2rem;
+  --font-size-xxl: 2rem;
 
   --font-weight-normal: 400;
   --font-weight-bold: 700;
@@ -160,7 +160,7 @@ footer {
   padding: var(--spacing-sm) var(--spacing-md);
   margin: 0 calc(-1 * var(--spacing-lg));
   background: var(--color-bg);
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-xxl);
 }
 
 /* ── Film Card ── */
@@ -202,7 +202,7 @@ footer {
 
 .film-title-link {
   position: sticky;
-  top: calc(var(--font-size-lg) + 2 * var(--spacing-sm));
+  top: calc(var(--font-size-xxl) + 2 * var(--spacing-sm));
   z-index: 1;
   display: block;
   padding: var(--spacing-md) 0 var(--spacing-sm);
@@ -302,7 +302,7 @@ a.screening:hover {
   padding: var(--spacing-md) 0 var(--spacing-sm);
   margin: 0 0 calc(var(--spacing-md) - var(--spacing-sm));
   background: var(--color-bg);
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xxl);
   text-box: trim-both cap alphabetic;
 }
 
