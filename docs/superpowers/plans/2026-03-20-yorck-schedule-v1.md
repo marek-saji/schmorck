@@ -539,7 +539,7 @@ git commit -m "feat: add Yorck API client with response mapping (placeholder API
 - Create: `src/templates/home.ts`
 - Create: `src/templates/film.ts`
 
-- [ ] **Step 1: Implement layout template**
+- [x] **Step 1: Implement layout template**
 
 The shared HTML shell. All pages use this. The `stale` flag controls whether the "might be out of date" banner is rendered.
 
@@ -579,7 +579,7 @@ export { layout };
 export type { LayoutOptions };
 ```
 
-- [ ] **Step 2: Implement home template**
+- [x] **Step 2: Implement home template**
 
 ```typescript
 import { layout } from './layout.ts';
@@ -654,7 +654,7 @@ function filmCard(
 export { homePage };
 ```
 
-- [ ] **Step 3: Implement film detail template**
+- [x] **Step 3: Implement film detail template**
 
 ```typescript
 import { layout } from './layout.ts';
@@ -732,12 +732,12 @@ function filmPage({ film, screenings, cinemas, stale }: FilmPageOptions): string
 export { filmPage };
 ```
 
-- [ ] **Step 4: Verify TypeScript compiles**
+- [x] **Step 4: Verify TypeScript compiles**
 
-Run: `npx tsc --noEmit`
+Run: `npx tsgo --noEmit`
 Expected: No errors
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/templates/
