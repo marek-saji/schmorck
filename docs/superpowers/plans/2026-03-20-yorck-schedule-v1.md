@@ -931,7 +931,7 @@ git commit -m "feat: add HTTP server with routing, SSE, and static file serving"
 **Files:**
 - Create: `public/main.mjs`
 
-- [ ] **Step 1: Implement SSE client**
+- [x] **Step 1: Implement SSE client**
 
 ```javascript
 // @ts-check
@@ -960,7 +960,7 @@ events.onerror = () => {
 };
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add public/main.mjs
