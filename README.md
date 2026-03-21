@@ -15,6 +15,11 @@ npm start
 npm run dev
 ```
 
+## Environment variables
+
+Copy [`.env-template`](./.env-template) to `.env` and see comments for
+details.
+
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).

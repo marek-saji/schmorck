@@ -5,7 +5,9 @@
 *.log
 
 # local files
+.env
 *.local
+*.local.*
 
 # temporary files
 /.superpowers

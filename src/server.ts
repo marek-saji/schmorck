@@ -2,13 +2,14 @@ import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
 import { readFile } from 'node:fs/promises';
 import { join, extname } from 'node:path';
-import { YORCK_VISTA_API_URL, PORT, APP_URL } from './lib/env.ts';
+import { YORCK_VISTA_API_URL, PORT, APP_URL, NODE_ENV, COMMIT_SHA } from './lib/env.ts';
 import { Cache } from './cache.ts';
 import { fetchSchedule } from './yorck-client.ts';
 import { homePage } from './templates/home.ts';
 import { filmPage } from './templates/film.ts';
 import type { ScheduleData } from './types.ts';
 
+const STATIC_MAX_AGE_S = 30 * 24 * 60 * 60; // 1 month
 const TTL_MS = parseInt(process.env.CACHE_TTL_MS ?? String(15 * 60_000), 10);
 const PUBLIC_DIR = join(import.meta.dirname, '..', 'public');
 
@@ -63,7 +64,12 @@ const server = createServer(async (req, res) => {
       try {
         const content = await readFile(filePath);
         const mime = MIME_TYPES[extname(filePath)] ?? 'application/octet-stream';
-        res.writeHead(200, { 'Content-Type': mime });
+        const headers: HeadersInit = { 'Content-Type': mime };
+        if (NODE_ENV !== 'development' && COMMIT_SHA) {
+          headers['ETag'] = `"${COMMIT_SHA}"`;
+          headers['Cache-Control'] = `public, max-age=${STATIC_MAX_AGE_S}, immutable`;
+        }
+        res.writeHead(200, headers);
         res.end(content);
       } catch {
         res.writeHead(404);

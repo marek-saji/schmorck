@@ -27,6 +27,8 @@ mock.module('./lib/env.ts', {
     YORCK_VISTA_API_URL: 'https://vista-yorck.test/',
     PORT: 0,
     APP_URL: 'http://yorck.test',
+    NODE_ENV: 'test',
+    COMMIT_SHA: undefined,
   },
 });
 
