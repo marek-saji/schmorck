@@ -2,7 +2,12 @@
   "$schema": "https://json.schemastore.org/package.json",
   "name": "@saji/yorck-alt",
   "description": "Alternative UI for https://yorck.de",
-  "keywords": ["berlin", "cinema", "yorck", "showtimes"],
+  "keywords": [
+    "berlin",
+    "cinema",
+    "yorck",
+    "showtimes"
+  ],
   "author": {
     "name": "Marek ‘saji’ Augustynowicz",
     "url": "https://mastodon.social/@saji"
@@ -26,5 +31,7 @@
     "dev": "node --watch src/server.ts",
     "test": "node --test 'src/**/*.test.ts'"
   },
-  "dependencies": {}
+  "devDependencies": {
+    "@typescript/native-preview": "^7.0.0-dev.20260321.1"
+  }
 }
