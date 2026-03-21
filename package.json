@@ -29,7 +29,8 @@
   "scripts": {
     "start": "node src/server.ts",
     "dev": "node --watch src/server.ts",
-    "test": "node --test 'src/**/*.test.ts'"
+    "lint": "tsgo --noEmit",
+    "test": "node --experimental-test-module-mocks --test 'src/**/*.test.ts'"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
