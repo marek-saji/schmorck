@@ -105,7 +105,9 @@ const API_HEADERS: HeadersInit = {
 };
 
 async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(new URL(path, YORCK_VISTA_API_URL), { headers: API_HEADERS });
+  const url = new URL(path, YORCK_VISTA_API_URL);
+  console.log('API', 'GET', url.toString());
+  const res = await fetch(url, { headers: API_HEADERS });
   if (!res.ok) {
     throw new Error(`Yorck API error: ${res.status} ${res.statusText}`);
   }
@@ -118,9 +120,6 @@ async function fetchSchedule(): Promise<ScheduleData> {
     fetchJson<VistaODataResponse<VistaScheduledFilm>>('OData.svc/ScheduledFilms'),
     fetchJson<VistaODataResponse<VistaSession>>('OData.svc/Sessions'),
   ]);
-  console.debug('SESSIONS', sessions.value);
-  console.debug('FILMS', films.value);
-  console.debug('CINEMAS', cinemas.value);
   return mapApiResponse({
     cinemas: cinemas.value,
     films: films.value,

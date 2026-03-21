@@ -14,7 +14,7 @@ function layout({ title, stale = false, body }: LayoutOptions): string {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)} — Yorck</title>
   <link rel="stylesheet" href="/styles.css">
-  <meta name="view-transition" content="same-origin">
+
 </head>
 <body>
   <header>

@@ -1,3 +1,7 @@
+@view-transition {
+  navigation: auto;
+}
+
 /* ── Palette ── */
 :root {
   --_palette-white: #f5f5f5;
@@ -30,6 +34,7 @@
   --spacing-xl: 2rem;
 
   --thickness-border: 1px;
+  --thickness-highlight: 3px;
 
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -322,6 +327,12 @@ a.screening:hover {
 
 .screening-date {
   margin-bottom: var(--spacing-md);
+}
+
+.screening-date-highlighted {
+  border-left: var(--thickness-highlight) solid var(--color-accent);
+  padding-left: var(--spacing-sm);
+  margin-left: calc(-1 * (var(--thickness-highlight) + var(--spacing-sm)));
 }
 
 .screening-date h3 {

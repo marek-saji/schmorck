@@ -7,12 +7,14 @@ interface FilmPageOptions {
   screenings: Screening[];
   cinemas: Cinema[];
   stale: boolean;
+  date?: string;
 }
 
-function filmPage({ film, screenings, cinemas, stale }: FilmPageOptions): string {
+function filmPage({ film, screenings, cinemas, stale, date }: FilmPageOptions): string {
   const cinemaMap = new Map(cinemas.map(c => [c.id, c]));
 
-  const poster = `<img src="${escapeHtml(film.posterUrl)}" alt="" class="film-poster-large" style="view-transition-name: poster-${escapeHtml(film.id)}">`;
+  const transitionName = date ? `poster-${film.id}-${date}` : `poster-${film.id}`;
+  const poster = `<img src="${escapeHtml(film.posterUrl)}" alt="" class="film-poster-large" style="view-transition-name: ${escapeHtml(transitionName)}">`;
 
   const meta = [
     film.runTime ? `${film.runTime} min` : null,
@@ -32,36 +34,38 @@ function filmPage({ film, screenings, cinemas, stale }: FilmPageOptions): string
     .filter(s => s.showtime > now)
     .sort((a, b) => a.showtime.getTime() - b.showtime.getTime());
 
-  const byDate = new Map<string, Screening[]>();
+  const byDate = new Map<string, { label: string; screenings: Screening[] }>();
   for (const s of upcoming) {
     const isoDate = s.showtime.toISOString().slice(0, 10);
-    const formatted = s.showtime.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-    const prefix = isoDate === todayIso ? 'Today — ' : isoDate === tomorrowIso ? 'Tomorrow — ' : '';
-    const dateKey = prefix + formatted;
-    const group = byDate.get(dateKey) ?? [];
-    group.push(s);
-    byDate.set(dateKey, group);
+    let group = byDate.get(isoDate);
+    if (!group) {
+      const formatted = s.showtime.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+      const prefix = isoDate === todayIso ? 'Today — ' : isoDate === tomorrowIso ? 'Tomorrow — ' : '';
+      group = { label: prefix + formatted, screenings: [] };
+      byDate.set(isoDate, group);
+    }
+    group.screenings.push(s);
   }
 
   const screeningHtml = byDate.size === 0
     ? '<p>No upcoming screenings.</p>'
-    : Array.from(byDate.entries()).map(([date, items]) => {
+    : Array.from(byDate.entries()).map(([isoDate, { label, screenings: items }]) => {
+        const highlighted = isoDate === date;
         const times = items.map(s => {
           const cinema = cinemaMap.get(s.cinemaId);
           const time = s.showtime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-          const isoDate = s.showtime.toISOString().slice(0, 10);
           const attrs = s.attributes?.length ? ` ${s.attributes.map(escapeHtml).join(' ')}` : '';
           const href = `https://www.yorck.de/de/films/${escapeHtml(film.slug)}?date=${isoDate}#view_screening_times`;
           return `<a href="${href}" class="screening"><strong class="screening-time">${time}</strong>${attrs ? `<span class="screening-attrs">${attrs}</span>` : ''}${cinema ? `<span class="screening-cinema">${escapeHtml(cinema.name)}</span>` : ''}</a>`;
         }).join('\n');
-        return `<div class="screening-date">
-  <h3>${escapeHtml(date)}</h3>
+        return `<div class="screening-date${highlighted ? ' screening-date-highlighted' : ''}">
+  <h3>${escapeHtml(label)}</h3>
   <div class="screening-times">${times}</div>
 </div>`;
       }).join('\n');
 
   const body = `<article class="film-detail">
-  <h1 class="film-detail-title">${escapeHtml(film.title)}</h1>
+  <h1 class="film-detail-title" style="view-transition-name: title-${escapeHtml(film.id)}${date ? `-${date}` : ''}">${escapeHtml(film.title)}</h1>
   ${poster}
   <div class="film-detail-info">
     ${meta ? `<p class="film-meta">${escapeHtml(meta)}</p>` : ''}

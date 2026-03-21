@@ -145,8 +145,9 @@ const server = createServer(async (req, res) => {
         return;
       }
       const filmScreenings = data.screenings.filter(s => s.scheduledFilmId === film.id);
+      const date = url.searchParams.get('date') ?? undefined;
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(filmPage({ film, screenings: filmScreenings, cinemas: data.cinemas, stale }));
+      res.end(filmPage({ film, screenings: filmScreenings, cinemas: data.cinemas, stale, date }));
       return;
     }
 

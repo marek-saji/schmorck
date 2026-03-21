@@ -20,22 +20,21 @@ function homePage({ data, stale }: HomeOptions): string {
     .filter(s => s.showtime > now)
     .sort((a, b) => a.showtime.getTime() - b.showtime.getTime());
 
-  // Group screenings: date → filmId → screenings
-  const byDate = new Map<string, Map<string, Screening[]>>();
+  // Group screenings: isoDate → filmId → screenings
+  const byDate = new Map<string, { label: string; films: Map<string, Screening[]> }>();
   for (const s of upcoming) {
     const isoDate = s.showtime.toISOString().slice(0, 10);
-    const formatted = s.showtime.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-    const prefix = isoDate === todayIso ? 'Today — ' : isoDate === tomorrowIso ? 'Tomorrow — ' : '';
-    const dateKey = prefix + formatted;
-    let dateGroup = byDate.get(dateKey);
+    let dateGroup = byDate.get(isoDate);
     if (!dateGroup) {
-      dateGroup = new Map();
-      byDate.set(dateKey, dateGroup);
+      const formatted = s.showtime.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+      const prefix = isoDate === todayIso ? 'Today — ' : isoDate === tomorrowIso ? 'Tomorrow — ' : '';
+      dateGroup = { label: prefix + formatted, films: new Map() };
+      byDate.set(isoDate, dateGroup);
     }
-    let filmGroup = dateGroup.get(s.scheduledFilmId);
+    let filmGroup = dateGroup.films.get(s.scheduledFilmId);
     if (!filmGroup) {
       filmGroup = [];
-      dateGroup.set(s.scheduledFilmId, filmGroup);
+      dateGroup.films.set(s.scheduledFilmId, filmGroup);
     }
     filmGroup.push(s);
   }
@@ -44,15 +43,15 @@ function homePage({ data, stale }: HomeOptions): string {
     return layout({ title: 'Schedule', stale, body: '<p>No upcoming screenings.</p>' });
   }
 
-  const body = Array.from(byDate.entries()).map(([date, filmsForDate]) => {
+  const body = Array.from(byDate.entries()).map(([isoDate, { label, films: filmsForDate }]) => {
     const filmCards = Array.from(filmsForDate.entries()).map(([filmId, filmScreenings]) => {
       const film = filmMap.get(filmId);
       if (!film) return '';
-      return filmCard(film, filmScreenings, cinemaMap);
+      return filmCard(film, filmScreenings, cinemaMap, isoDate);
     }).join('\n');
 
     return `<section class="date-group">
-  <h2 class="date-heading">${escapeHtml(date)}</h2>
+  <h2 class="date-heading">${escapeHtml(label)}</h2>
   ${filmCards}
 </section>`;
   }).join('\n');
@@ -64,8 +63,9 @@ function filmCard(
   film: Film,
   screenings: Screening[],
   cinemaMap: Map<string, Cinema>,
+  isoDate: string,
 ): string {
-  const poster = `<img src="${escapeHtml(film.posterUrl)}" alt="" class="film-poster" style="view-transition-name: poster-${escapeHtml(film.id)}">`;
+  const poster = `<img src="${escapeHtml(film.posterUrl)}" alt="" class="film-poster" style="view-transition-name: poster-${escapeHtml(film.id)}-${isoDate}">`;
 
   const meta = [
     film.runTime ? `${film.runTime} min` : null,
@@ -83,12 +83,12 @@ function filmCard(
   }).join('\n');
 
   return `<article class="film-card">
-  <a href="/films/${escapeHtml(film.slug)}" class="film-poster-link">
+  <a href="/films/${escapeHtml(film.slug)}?date=${isoDate}" class="film-poster-link">
     ${poster}
   </a>
   <div class="film-body">
-    <a href="/films/${escapeHtml(film.slug)}" class="film-title-link">
-      <h2>${escapeHtml(film.title)}</h2>
+    <a href="/films/${escapeHtml(film.slug)}?date=${isoDate}" class="film-title-link">
+      <h2 style="view-transition-name: title-${escapeHtml(film.id)}-${isoDate}">${escapeHtml(film.title)}</h2>
     </a>
     ${meta ? `<p class="film-meta">${meta}</p>` : ''}
     ${film.synopsis ? `<p class="film-synopsis-short">${escapeHtml(film.synopsis)}</p>` : ''}
