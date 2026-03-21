@@ -113,7 +113,7 @@ git commit -m "chore: project scaffolding — tsconfig, gitignore, package scrip
 - Create: `src/types.ts`
 - Create: `src/lib/html.ts`
 
-- [ ] **Step 1: Create type definitions**
+- [x] **Step 1: Create type definitions**
 
 ```typescript
 interface Cinema {
@@ -160,7 +160,7 @@ export type { Cinema, Film, Screening, ScheduleData };
 
 `ScheduleData` bundles everything the cache stores and templates consume. `fetchedAt` is used for cache freshness checks. See swagger file for full Vista API shapes.
 
-- [ ] **Step 2: Create HTML utility**
+- [x] **Step 2: Create HTML utility**
 
 ```typescript
 function escapeHtml(str: string): string {
@@ -174,12 +174,12 @@ function escapeHtml(str: string): string {
 export { escapeHtml };
 ```
 
-- [ ] **Step 3: Verify TypeScript is happy**
+- [x] **Step 3: Verify TypeScript is happy**
 
 Run: `npx tsc --noEmit`
 Expected: No errors
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/types.ts src/lib/html.ts
@@ -194,7 +194,7 @@ git commit -m "feat: add core type definitions and HTML utilities"
 - Create: `src/cache.ts`
 - Create: `src/cache.test.ts`
 
-- [ ] **Step 1: Write failing tests for cache**
+- [x] **Step 1: Write failing tests for cache**
 
 ```typescript
 import { describe, it, mock, beforeEach } from 'node:test';
@@ -258,12 +258,12 @@ describe('Cache', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `node --test src/cache.test.ts`
 Expected: FAIL — `Cache` not found
 
-- [ ] **Step 3: Implement Cache**
+- [x] **Step 3: Implement Cache**
 
 ```typescript
 import type { ScheduleData } from './types.ts';
@@ -330,12 +330,12 @@ export { Cache };
 export type { CacheOptions };
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `node --test src/cache.test.ts`
 Expected: All 6 tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/cache.ts src/cache.test.ts
@@ -355,7 +355,7 @@ git commit -m "feat: add in-memory cache with TTL, dedup, and change detection"
 - `OData.svc/ScheduledFilms` — films currently scheduled
 - `OData.svc/Sessions` — individual showtimes
 
-- [ ] **Step 1: Write failing tests for response mapping**
+- [x] **Step 1: Write failing tests for response mapping**
 
 The tests should verify that raw Vista API responses are correctly mapped to our internal types. Fixture data uses real Vista OData field names.
 
@@ -423,12 +423,12 @@ describe('mapApiResponse', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `node --test src/yorck-client.test.ts`
 Expected: FAIL — `mapApiResponse` not found
 
-- [ ] **Step 3: Implement yorck-client**
+- [x] **Step 3: Implement yorck-client**
 
 ```typescript
 import type { Cinema, Film, Screening, ScheduleData } from './types.ts';
@@ -518,12 +518,12 @@ async function fetchSchedule(): Promise<ScheduleData> {
 export { mapApiResponse, fetchSchedule };
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `node --test src/yorck-client.test.ts`
 Expected: All 3 tests PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/yorck-client.ts src/yorck-client.test.ts
