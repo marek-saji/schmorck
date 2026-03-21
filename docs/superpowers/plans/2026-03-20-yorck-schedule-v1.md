@@ -751,7 +751,7 @@ git commit -m "feat: add HTML templates — layout, home, film detail"
 **Files:**
 - Create: `src/server.ts`
 
-- [ ] **Step 1: Implement server**
+- [x] **Step 1: Implement server**
 
 ```typescript
 import { createServer } from 'node:http';
@@ -912,12 +912,12 @@ server.listen(PORT, () => {
 });
 ```
 
-- [ ] **Step 2: Verify TypeScript compiles**
+- [x] **Step 2: Verify TypeScript compiles**
 
-Run: `npx tsc --noEmit`
+Run: `npx tsgo --noEmit`
 Expected: No errors
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/server.ts
