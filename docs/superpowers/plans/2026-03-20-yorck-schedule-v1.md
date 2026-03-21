@@ -30,14 +30,15 @@ The plan below uses **placeholder API shapes**. After API discovery, Task 2 (yor
 | `.nvmrc` | Node 24 (already exists) |
 | `tsconfig.json` | erasableSyntaxOnly, strict, Node module resolution |
 | `package.json` | Scripts: start, dev, test (already exists, update scripts) |
-| `src/types.ts` | Cinema, Movie, Screening type definitions |
+| `src/types.ts` | Cinema, Film, Screening type definitions |
 | `src/lib/html.ts` | HTML utility functions (escapeHtml) |
 | `src/cache.ts` | In-memory cache with TTL, single-inflight dedup, change detection |
 | `src/yorck-client.ts` | Fetch from Yorck API, map to internal types |
 | `src/templates/layout.ts` | Shared HTML shell (head, scripts, styles, banner) |
-| `src/templates/home.ts` | Home page: movie list with screenings |
-| `src/templates/movie.ts` | Movie detail page |
+| `src/templates/home.ts` | Home page: film list with screenings |
+| `src/templates/film.ts` | Film detail page |
 | `src/server.ts` | HTTP server, routing, SSE endpoint, static file serving |
+| `public/poster-fallback.svg` | Fallback image for films with no poster |
 | `public/styles.css` | All styles, CSS custom properties / design tokens |
 | `public/main.mjs` | SSE connection, banner updates |
 | `src/cache.test.ts` | Tests for cache behavior |
@@ -116,47 +117,48 @@ git commit -m "chore: project scaffolding — tsconfig, gitignore, package scrip
 
 ```typescript
 interface Cinema {
-  id: string;
-  name: string;
-  slug: string;
-  address?: string;
+  id: string;                // Vista: ID
+  name: string;              // Vista: Name
+  address?: string;          // Vista: Address1 (+ Address2)
+  city?: string;             // Vista: City
+  latitude?: number;         // Vista: Latitude
+  longitude?: number;        // Vista: Longitude
 }
 
-interface Movie {
-  id: string;
-  title: string;
-  originalTitle?: string;
-  slug: string;
-  posterUrl?: string;
-  description?: string;
-  durationMinutes?: number;
-  director?: string;
-  cast?: string[];
-  writer?: string;
-  year?: number;
-  country?: string;
-  originalLanguages?: string[];
+interface Film {
+  id: string;                // Vista: ScheduledFilmId
+  title: string;             // Vista: Title
+  synopsis?: string;         // Vista: Synopsis
+  runTime?: string;          // Vista: RunTime (string in API)
+  cast?: string[];           // Vista: Cast[].FirstName + LastName
+  rating?: string;           // Vista: Rating
+  openingDate?: string;      // Vista: OpeningDate
+  trailerUrl?: string;       // Vista: TrailerUrl
 }
 
 interface Screening {
-  movieId: string;
-  cinemaId: string;
-  datetime: Date;
-  languageInfo: string;
-  bookingUrl?: string;
+  id: string;                // Vista: SessionId
+  scheduledFilmId: string;   // Vista: ScheduledFilmId
+  cinemaId: string;          // Vista: CinemaId
+  showtime: Date;            // Vista: Showtime
+  screenName?: string;       // Vista: ScreenName
+  screenNumber?: number;     // Vista: ScreenNumber
+  seatsAvailable?: number;   // Vista: SeatsAvailable
+  soldoutStatus?: number;    // Vista: SoldoutStatus (0=None, 1=AlmostFull, 2=Full)
+  attributes?: string[];     // Vista: SessionAttributesNames
 }
 
 interface ScheduleData {
   cinemas: Cinema[];
-  movies: Movie[];
+  films: Film[];
   screenings: Screening[];
   fetchedAt: Date;
 }
 
-export type { Cinema, Movie, Screening, ScheduleData };
+export type { Cinema, Film, Screening, ScheduleData };
 ```
 
-`ScheduleData` bundles everything the cache stores and templates consume. `fetchedAt` is used for cache freshness checks.
+`ScheduleData` bundles everything the cache stores and templates consume. `fetchedAt` is used for cache freshness checks. See swagger file for full Vista API shapes.
 
 - [ ] **Step 2: Create HTML utility**
 
@@ -207,14 +209,14 @@ describe('Cache', () => {
 
   it('returns data when fresh', () => {
     const cache = new Cache({ ttlMs: 1000 });
-    const data = { cinemas: [], movies: [], screenings: [], fetchedAt: new Date() };
+    const data = { cinemas: [], films: [], screenings: [], fetchedAt: new Date() };
     cache.set(data);
     assert.deepEqual(cache.get(), data);
   });
 
   it('reports stale when TTL exceeded', async () => {
     const cache = new Cache({ ttlMs: 50 });
-    const data = { cinemas: [], movies: [], screenings: [], fetchedAt: new Date() };
+    const data = { cinemas: [], films: [], screenings: [], fetchedAt: new Date() };
     cache.set(data);
     await new Promise(r => setTimeout(r, 60));
     assert.equal(cache.isFresh(), false);
@@ -227,7 +229,7 @@ describe('Cache', () => {
     const fetcher = async () => {
       fetchCount++;
       await new Promise(r => setTimeout(r, 50));
-      return { cinemas: [], movies: [], screenings: [], fetchedAt: new Date() };
+      return { cinemas: [], films: [], screenings: [], fetchedAt: new Date() };
     };
     const cache = new Cache({ ttlMs: 1000 });
     // Trigger two refreshes concurrently
@@ -239,17 +241,17 @@ describe('Cache', () => {
 
   it('detects when data has changed', () => {
     const cache = new Cache({ ttlMs: 1000 });
-    const data1 = { cinemas: [], movies: [{ id: '1', title: 'A', slug: 'a' }], screenings: [], fetchedAt: new Date() };
+    const data1 = { cinemas: [], films: [{ id: '1', title: 'A' }], screenings: [], fetchedAt: new Date() };
     cache.set(data1);
-    const data2 = { cinemas: [], movies: [{ id: '1', title: 'B', slug: 'b' }], screenings: [], fetchedAt: new Date() };
+    const data2 = { cinemas: [], films: [{ id: '1', title: 'B' }], screenings: [], fetchedAt: new Date() };
     assert.equal(cache.setAndDetectChange(data2), true);
   });
 
   it('detects when data has not changed', () => {
     const cache = new Cache({ ttlMs: 1000 });
-    const data1 = { cinemas: [], movies: [{ id: '1', title: 'A', slug: 'a' }], screenings: [], fetchedAt: new Date() };
+    const data1 = { cinemas: [], films: [{ id: '1', title: 'A' }], screenings: [], fetchedAt: new Date() };
     cache.set(data1);
-    const data2 = { cinemas: [], movies: [{ id: '1', title: 'A', slug: 'a' }], screenings: [], fetchedAt: new Date(Date.now() + 1000) };
+    const data2 = { cinemas: [], films: [{ id: '1', title: 'A' }], screenings: [], fetchedAt: new Date(Date.now() + 1000) };
     // fetchedAt differs but content is the same
     assert.equal(cache.setAndDetectChange(data2), false);
   });
@@ -348,11 +350,14 @@ git commit -m "feat: add in-memory cache with TTL, dedup, and change detection"
 - Create: `src/yorck-client.ts`
 - Create: `src/yorck-client.test.ts`
 
-**Note:** This task uses **placeholder API shapes**. After API discovery (`docs/api.md`), update the `mapApiResponse` function and tests to match real responses. The rest of the app is insulated from changes here.
+**Note:** Uses the documented Vista Connect OData endpoints (see `docs/api.md` and swagger file). Three separate requests:
+- `OData.svc/Cinemas` — cinema list
+- `OData.svc/ScheduledFilms` — films currently scheduled
+- `OData.svc/Sessions` — individual showtimes
 
 - [ ] **Step 1: Write failing tests for response mapping**
 
-The tests should verify that raw API responses are correctly mapped to our internal types. Use fixture data that mimics the expected API shape (to be replaced with real shapes after discovery).
+The tests should verify that raw Vista API responses are correctly mapped to our internal types. Fixture data uses real Vista OData field names.
 
 ```typescript
 import { describe, it } from 'node:test';
@@ -362,57 +367,58 @@ import { mapApiResponse } from './yorck-client.ts';
 describe('mapApiResponse', () => {
   it('maps a cinema', () => {
     const raw = {
-      cinemas: [{ id: '1', name: 'Delphi LUX', slug: 'delphi-lux' }],
-      movies: [],
-      screenings: [],
+      cinemas: [{ ID: '0000000001', Name: 'Delphi LUX', Address1: 'Kantstraße 10', City: 'Berlin', Latitude: 52.505, Longitude: 13.325 }],
+      films: [],
+      sessions: [],
     };
     const result = mapApiResponse(raw);
     assert.equal(result.cinemas.length, 1);
     assert.equal(result.cinemas[0].name, 'Delphi LUX');
+    assert.equal(result.cinemas[0].address, 'Kantstraße 10');
   });
 
-  it('maps a movie with all fields', () => {
+  it('maps a film with cast', () => {
     const raw = {
       cinemas: [],
-      movies: [{
-        id: '42',
-        title: 'Anora',
-        originalTitle: 'Anora',
-        slug: 'anora',
-        posterUrl: 'https://example.com/poster.jpg',
-        description: 'A young woman from Brooklyn...',
-        durationMinutes: 139,
-        director: 'Sean Baker',
-        cast: ['Mikey Madison', 'Mark Eydelshteyn'],
-        writer: 'Sean Baker',
-        year: 2024,
-        country: 'USA',
-        originalLanguages: ['en', 'ru'],
+      films: [{
+        ScheduledFilmId: 'HO00004842',
+        Title: 'Anora',
+        Synopsis: 'A young woman from Brooklyn...',
+        RunTime: '139',
+        Rating: 'FSK 16',
+        TrailerUrl: 'https://www.youtube.com/watch?v=abc',
+        Cast: [
+          { FirstName: 'Mikey', LastName: 'Madison', PersonType: 'Actor' },
+          { FirstName: 'Sean', LastName: 'Baker', PersonType: 'Director' },
+        ],
       }],
-      screenings: [],
+      sessions: [],
     };
     const result = mapApiResponse(raw);
-    assert.equal(result.movies[0].title, 'Anora');
-    assert.equal(result.movies[0].director, 'Sean Baker');
-    assert.deepEqual(result.movies[0].cast, ['Mikey Madison', 'Mark Eydelshteyn']);
+    assert.equal(result.films[0].title, 'Anora');
+    assert.deepEqual(result.films[0].cast, ['Mikey Madison', 'Sean Baker']);
   });
 
-  it('maps a screening with datetime', () => {
+  it('maps a screening with showtime', () => {
     const raw = {
       cinemas: [],
-      movies: [],
-      screenings: [{
-        movieId: '42',
-        cinemaId: '1',
-        datetime: '2026-03-20T18:30:00+01:00',
-        languageInfo: 'OmU',
-        bookingUrl: 'https://yorck.de/book/123',
+      films: [],
+      sessions: [{
+        SessionId: 'sess-1',
+        ScheduledFilmId: 'HO00004842',
+        CinemaId: '0000000001',
+        Showtime: '2026-03-20T18:30:00',
+        ScreenName: 'Saal 1',
+        ScreenNumber: 1,
+        SeatsAvailable: 42,
+        SoldoutStatus: 0,
+        SessionAttributesNames: ['OmU'],
       }],
     };
     const result = mapApiResponse(raw);
-    assert.equal(result.screenings[0].movieId, '42');
-    assert.ok(result.screenings[0].datetime instanceof Date);
-    assert.equal(result.screenings[0].languageInfo, 'OmU');
+    assert.equal(result.screenings[0].scheduledFilmId, 'HO00004842');
+    assert.ok(result.screenings[0].showtime instanceof Date);
+    assert.deepEqual(result.screenings[0].attributes, ['OmU']);
   });
 });
 ```
@@ -425,57 +431,88 @@ Expected: FAIL — `mapApiResponse` not found
 - [ ] **Step 3: Implement yorck-client**
 
 ```typescript
-import type { Cinema, Movie, Screening, ScheduleData } from './types.ts';
+import type { Cinema, Film, Screening, ScheduleData } from './types.ts';
+// Vista API response types generated from swagger (see src/vista-api-types.ts)
+import type { VistaCinema, VistaScheduledFilm, VistaSession, VistaODataResponse } from './vista-api-types.ts';
 
-// TODO: Replace with real Yorck API base URL after discovery
-const API_BASE = 'https://api.yorck.de';
+const API_KEY = process.env.YORCK_VISTA_API_KEY;
+if (!API_KEY) throw new Error('YORCK_VISTA_API_KEY is required');
 
-/** Maps raw API response to internal types. Adapt after API discovery. */
-function mapApiResponse(raw: any): ScheduleData {
-  const cinemas: Cinema[] = (raw.cinemas ?? []).map((c: any) => ({
-    id: String(c.id),
-    name: c.name,
-    slug: c.slug,
-    address: c.address,
-  }));
+const API_BASE = process.env.YORCK_VISTA_API_URL;
+if (!API_BASE) throw new Error('YORCK_VISTA_API_URL is required');
+if (!URL.canParse(API_BASE)) throw new Error('YORCK_VISTA_API_URL is not a valid URL');
+if (!API_BASE.endsWith('/')) throw new Error('YORCK_VISTA_API_URL must end with /');
 
-  const movies: Movie[] = (raw.movies ?? []).map((m: any) => ({
-    id: String(m.id),
-    title: m.title,
-    originalTitle: m.originalTitle,
-    slug: m.slug,
-    posterUrl: m.posterUrl,
-    description: m.description,
-    durationMinutes: m.durationMinutes,
-    director: m.director,
-    cast: m.cast,
-    writer: m.writer,
-    year: m.year,
-    country: m.country,
-    originalLanguages: m.originalLanguages,
-  }));
+const API_HEADERS: HeadersInit = {
+  'Content-Type': 'application/json',
+  'ConnectApiToken': API_KEY,
+};
 
-  const screenings: Screening[] = (raw.screenings ?? []).map((s: any) => ({
-    movieId: String(s.movieId),
-    cinemaId: String(s.cinemaId),
-    datetime: new Date(s.datetime),
-    languageInfo: s.languageInfo,
-    bookingUrl: s.bookingUrl,
-  }));
-
-  return { cinemas, movies, screenings, fetchedAt: new Date() };
+interface RawApiData {
+  cinemas: VistaCinema[];
+  films: VistaScheduledFilm[];
+  sessions: VistaSession[];
 }
 
-/** Fetches schedule data from Yorck API. */
-async function fetchSchedule(): Promise<ScheduleData> {
-  // TODO: Replace with real endpoint(s) after API discovery
-  // May need multiple requests (cinemas, movies, screenings separately)
-  const res = await fetch(`${API_BASE}/schedule`);
+function mapApiResponse(raw: RawApiData): ScheduleData {
+  const cinemas: Cinema[] = raw.cinemas.map(c => ({
+    id: c.ID,
+    name: c.Name,
+    address: [c.Address1, c.Address2].filter(Boolean).join(', ') || undefined,
+    city: c.City,
+    latitude: c.Latitude,
+    longitude: c.Longitude,
+  }));
+
+  const films: Film[] = raw.films.map(f => ({
+    id: f.ScheduledFilmId,
+    title: f.Title,
+    synopsis: f.Synopsis,
+    runTime: f.RunTime,
+    cast: f.Cast?.map(p => `${p.FirstName} ${p.LastName}`.trim()),
+    rating: f.Rating,
+    openingDate: f.OpeningDate,
+    trailerUrl: f.TrailerUrl,
+  }));
+
+  const screenings: Screening[] = raw.sessions.map(s => ({
+    id: s.SessionId,
+    scheduledFilmId: s.ScheduledFilmId,
+    cinemaId: s.CinemaId,
+    showtime: new Date(s.Showtime),
+    screenName: s.ScreenName,
+    screenNumber: s.ScreenNumber,
+    seatsAvailable: s.SeatsAvailable,
+    soldoutStatus: s.SoldoutStatus,
+    attributes: s.SessionAttributesNames,
+  }));
+
+  return { cinemas, films, screenings, fetchedAt: new Date() };
+}
+
+// Types generated from swagger file (see src/vista-api-types.ts)
+// e.g. VistaODataResponse<T>, VistaCinema, VistaScheduledFilm, VistaSession
+
+async function fetchJson<T>(path: string): Promise<T> {
+  const res = await fetch(new URL(path, API_BASE), { headers: API_HEADERS });
   if (!res.ok) {
     throw new Error(`Yorck API error: ${res.status} ${res.statusText}`);
   }
-  const raw = await res.json();
-  return mapApiResponse(raw);
+  return res.json() as Promise<T>;
+}
+
+/** Fetches schedule data from Yorck API (three OData endpoints). */
+async function fetchSchedule(): Promise<ScheduleData> {
+  const [cinemas, films, sessions] = await Promise.all([
+    fetchJson<VistaODataResponse<VistaCinema>>('OData.svc/Cinemas'),
+    fetchJson<VistaODataResponse<VistaScheduledFilm>>('OData.svc/ScheduledFilms'),
+    fetchJson<VistaODataResponse<VistaSession>>('OData.svc/Sessions'),
+  ]);
+  return mapApiResponse({
+    cinemas: cinemas.value,
+    films: films.value,
+    sessions: sessions.value,
+  });
 }
 
 export { mapApiResponse, fetchSchedule };
@@ -500,7 +537,7 @@ git commit -m "feat: add Yorck API client with response mapping (placeholder API
 **Files:**
 - Create: `src/templates/layout.ts`
 - Create: `src/templates/home.ts`
-- Create: `src/templates/movie.ts`
+- Create: `src/templates/film.ts`
 
 - [ ] **Step 1: Implement layout template**
 
@@ -547,7 +584,7 @@ export type { LayoutOptions };
 ```typescript
 import { layout } from './layout.ts';
 import { escapeHtml } from '../lib/html.ts';
-import type { ScheduleData, Movie, Screening, Cinema } from '../types.ts';
+import type { ScheduleData, Film, Screening, Cinema } from '../types.ts';
 
 interface HomeOptions {
   data: ScheduleData;
@@ -555,64 +592,60 @@ interface HomeOptions {
 }
 
 function homePage({ data, stale }: HomeOptions): string {
-  const { movies, screenings, cinemas } = data;
+  const { films, screenings, cinemas } = data;
   const cinemaMap = new Map(cinemas.map(c => [c.id, c]));
 
-  // Sort movies by earliest upcoming screening
+  // Sort films by earliest upcoming screening
   const now = new Date();
-  const movieWithEarliest = movies
-    .map(movie => {
-      const movieScreenings = screenings
-        .filter(s => s.movieId === movie.id && s.datetime > now)
-        .sort((a, b) => a.datetime.getTime() - b.datetime.getTime());
-      return { movie, screenings: movieScreenings, earliest: movieScreenings[0]?.datetime };
+  const filmWithEarliest = films
+    .map(film => {
+      const filmScreenings = screenings
+        .filter(s => s.scheduledFilmId === film.id && s.showtime > now)
+        .sort((a, b) => a.showtime.getTime() - b.showtime.getTime());
+      return { film, screenings: filmScreenings, earliest: filmScreenings[0]?.showtime };
     })
-    .filter(m => m.earliest) // Only movies with upcoming screenings
+    .filter(f => f.earliest) // Only films with upcoming screenings
     .sort((a, b) => a.earliest!.getTime() - b.earliest!.getTime());
 
-  const body = movieWithEarliest.length === 0
+  const body = filmWithEarliest.length === 0
     ? '<p>No upcoming screenings.</p>'
-    : movieWithEarliest.map(({ movie, screenings }) =>
-        movieCard(movie, screenings, cinemaMap)
+    : filmWithEarliest.map(({ film, screenings }) =>
+        filmCard(film, screenings, cinemaMap)
       ).join('\n');
 
   return layout({ title: 'Schedule', stale, body });
 }
 
-function movieCard(
-  movie: Movie,
+function filmCard(
+  film: Film,
   screenings: Screening[],
   cinemaMap: Map<string, Cinema>,
 ): string {
-  const poster = movie.posterUrl
-    ? `<img src="${escapeHtml(movie.posterUrl)}" alt="" class="movie-poster" style="view-transition-name: poster-${escapeHtml(movie.id)}">`
-    : '<div class="movie-poster-placeholder"></div>';
+  const poster = `<img src="/posters/${escapeHtml(film.id)}" alt="" class="film-poster" style="view-transition-name: poster-${escapeHtml(film.id)}">`;
 
   const meta = [
-    movie.durationMinutes ? `${movie.durationMinutes} min` : null,
-    movie.year ? String(movie.year) : null,
-    movie.director,
+    film.runTime ? `${film.runTime} min` : null,
+    film.rating,
   ].filter(Boolean).join(' · ');
 
   const screeningItems = screenings.map(s => {
     const cinema = cinemaMap.get(s.cinemaId);
-    const time = s.datetime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    const date = s.datetime.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
-    const label = `${date} ${time}` + (cinema ? ` ${escapeHtml(cinema.name)}` : '') + ` ${escapeHtml(s.languageInfo)}`;
-    return s.bookingUrl
-      ? `<a href="${escapeHtml(s.bookingUrl)}" class="screening">${label}</a>`
-      : `<span class="screening">${label}</span>`;
+    const time = s.showtime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const date = s.showtime.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+    const attrs = s.attributes?.length ? ` ${s.attributes.map(escapeHtml).join(' ')}` : '';
+    const label = `${date} ${time}` + (cinema ? ` ${escapeHtml(cinema.name)}` : '') + attrs;
+    return `<span class="screening">${label}</span>`;
   }).join('\n');
 
-  return `<article class="movie-card">
-  <a href="/movies/${escapeHtml(movie.slug)}" class="movie-link">
+  return `<article class="film-card">
+  <a href="/films/${escapeHtml(film.id)}" class="film-link">
     ${poster}
-    <div class="movie-info">
-      <h2>${escapeHtml(movie.title)}</h2>
-      ${meta ? `<p class="movie-meta">${escapeHtml(meta)}</p>` : ''}
+    <div class="film-info">
+      <h2>${escapeHtml(film.title)}</h2>
+      ${meta ? `<p class="film-meta">${escapeHtml(meta)}</p>` : ''}
     </div>
   </a>
-  <div class="movie-screenings">
+  <div class="film-screenings">
     ${screeningItems}
   </div>
 </article>`;
@@ -621,49 +654,43 @@ function movieCard(
 export { homePage };
 ```
 
-- [ ] **Step 3: Implement movie detail template**
+- [ ] **Step 3: Implement film detail template**
 
 ```typescript
 import { layout } from './layout.ts';
 import { escapeHtml } from '../lib/html.ts';
-import type { ScheduleData, Movie, Screening, Cinema } from '../types.ts';
+import type { Film, Screening, Cinema } from '../types.ts';
 
-interface MoviePageOptions {
-  movie: Movie;
+interface FilmPageOptions {
+  film: Film;
   screenings: Screening[];
   cinemas: Cinema[];
   stale: boolean;
 }
 
-function moviePage({ movie, screenings, cinemas, stale }: MoviePageOptions): string {
+function filmPage({ film, screenings, cinemas, stale }: FilmPageOptions): string {
   const cinemaMap = new Map(cinemas.map(c => [c.id, c]));
 
-  const poster = movie.posterUrl
-    ? `<img src="${escapeHtml(movie.posterUrl)}" alt="" class="movie-poster-large" style="view-transition-name: poster-${escapeHtml(movie.id)}">`
-    : '';
+  const poster = `<img src="/posters/${escapeHtml(film.id)}" alt="" class="film-poster-large" style="view-transition-name: poster-${escapeHtml(film.id)}">`;
 
   const meta = [
-    movie.durationMinutes ? `${movie.durationMinutes} min` : null,
-    movie.year ? String(movie.year) : null,
-    movie.country,
+    film.runTime ? `${film.runTime} min` : null,
+    film.rating,
   ].filter(Boolean).join(' · ');
 
   const credits = [
-    movie.director ? `<p><strong>Director:</strong> ${escapeHtml(movie.director)}</p>` : '',
-    movie.writer ? `<p><strong>Writer:</strong> ${escapeHtml(movie.writer)}</p>` : '',
-    movie.cast?.length ? `<p><strong>Cast:</strong> ${movie.cast.map(escapeHtml).join(', ')}</p>` : '',
-    movie.originalLanguages?.length ? `<p><strong>Language:</strong> ${movie.originalLanguages.map(escapeHtml).join(', ')}</p>` : '',
+    film.cast?.length ? `<p><strong>Cast:</strong> ${film.cast.map(escapeHtml).join(', ')}</p>` : '',
   ].filter(Boolean).join('\n');
 
   // Group screenings by date
   const now = new Date();
   const upcoming = screenings
-    .filter(s => s.datetime > now)
-    .sort((a, b) => a.datetime.getTime() - b.datetime.getTime());
+    .filter(s => s.showtime > now)
+    .sort((a, b) => a.showtime.getTime() - b.showtime.getTime());
 
   const byDate = new Map<string, Screening[]>();
   for (const s of upcoming) {
-    const dateKey = s.datetime.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+    const dateKey = s.showtime.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
     const group = byDate.get(dateKey) ?? [];
     group.push(s);
     byDate.set(dateKey, group);
@@ -674,11 +701,10 @@ function moviePage({ movie, screenings, cinemas, stale }: MoviePageOptions): str
     : Array.from(byDate.entries()).map(([date, items]) => {
         const times = items.map(s => {
           const cinema = cinemaMap.get(s.cinemaId);
-          const time = s.datetime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-          const label = time + (cinema ? ` ${escapeHtml(cinema.name)}` : '') + ` ${escapeHtml(s.languageInfo)}`;
-          return s.bookingUrl
-            ? `<a href="${escapeHtml(s.bookingUrl)}" class="screening">${label}</a>`
-            : `<span class="screening">${label}</span>`;
+          const time = s.showtime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+          const attrs = s.attributes?.length ? ` ${s.attributes.map(escapeHtml).join(' ')}` : '';
+          const label = time + (cinema ? ` ${escapeHtml(cinema.name)}` : '') + attrs;
+          return `<span class="screening">${label}</span>`;
         }).join('\n');
         return `<div class="screening-date">
   <h3>${escapeHtml(date)}</h3>
@@ -686,14 +712,13 @@ function moviePage({ movie, screenings, cinemas, stale }: MoviePageOptions): str
 </div>`;
       }).join('\n');
 
-  const body = `<article class="movie-detail">
+  const body = `<article class="film-detail">
   ${poster}
-  <div class="movie-detail-info">
-    <h1>${escapeHtml(movie.title)}</h1>
-    ${movie.originalTitle && movie.originalTitle !== movie.title ? `<p class="original-title">${escapeHtml(movie.originalTitle)}</p>` : ''}
-    ${meta ? `<p class="movie-meta">${escapeHtml(meta)}</p>` : ''}
+  <div class="film-detail-info">
+    <h1>${escapeHtml(film.title)}</h1>
+    ${meta ? `<p class="film-meta">${escapeHtml(meta)}</p>` : ''}
     ${credits}
-    ${movie.description ? `<div class="movie-description">${escapeHtml(movie.description)}</div>` : ''}
+    ${film.synopsis ? `<div class="film-synopsis">${escapeHtml(film.synopsis)}</div>` : ''}
   </div>
   <section class="screenings">
     <h2>Screenings</h2>
@@ -701,10 +726,10 @@ function moviePage({ movie, screenings, cinemas, stale }: MoviePageOptions): str
   </section>
 </article>`;
 
-  return layout({ title: movie.title, stale, body });
+  return layout({ title: film.title, stale, body });
 }
 
-export { moviePage };
+export { filmPage };
 ```
 
 - [ ] **Step 4: Verify TypeScript compiles**
@@ -716,7 +741,7 @@ Expected: No errors
 
 ```bash
 git add src/templates/
-git commit -m "feat: add HTML templates — layout, home, movie detail"
+git commit -m "feat: add HTML templates — layout, home, film detail"
 ```
 
 ---
@@ -730,12 +755,13 @@ git commit -m "feat: add HTML templates — layout, home, movie detail"
 
 ```typescript
 import { createServer } from 'node:http';
+import { Readable } from 'node:stream';
 import { readFile } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 import { Cache } from './cache.ts';
 import { fetchSchedule } from './yorck-client.ts';
 import { homePage } from './templates/home.ts';
-import { moviePage } from './templates/movie.ts';
+import { filmPage } from './templates/film.ts';
 
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
 const TTL_MS = parseInt(process.env.CACHE_TTL_MS ?? String(15 * 60 * 1000), 10);
@@ -828,24 +854,45 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    // Movie detail page
-    const movieMatch = url.pathname.match(/^\/movies\/([^/]+)$/);
-    if (movieMatch) {
+    // Poster proxy — streams upstream image or serves fallback
+    const posterMatch = url.pathname.match(/^\/posters\/([^/]+)$/);
+    if (posterMatch) {
+      const filmId = posterMatch[1];
+      try {
+        const upstream = await fetch(new URL(`CDN/media/entity/get/Movies/${filmId}`, API_BASE));
+        if (upstream.ok && upstream.body) {
+          res.writeHead(200, {
+            'Content-Type': upstream.headers.get('Content-Type') ?? 'image/jpeg',
+            'Cache-Control': 'public, max-age=86400',
+          });
+          Readable.fromWeb(upstream.body).pipe(res);
+          return;
+        }
+      } catch { /* fall through to fallback */ }
+      const fallback = await readFile(join(PUBLIC_DIR, 'poster-fallback.svg'));
+      res.writeHead(200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400' });
+      res.end(fallback);
+      return;
+    }
+
+    // Film detail page
+    const filmMatch = url.pathname.match(/^\/films\/([^/]+)$/);
+    if (filmMatch) {
       if (!data) {
         res.writeHead(503, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end('<html><body><h1>Schedule currently unavailable</h1></body></html>');
         return;
       }
-      const slug = movieMatch[1];
-      const movie = data.movies.find(m => m.slug === slug);
-      if (!movie) {
+      const filmId = filmMatch[1];
+      const film = data.films.find(f => f.id === filmId);
+      if (!film) {
         res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end('<html><body><h1>Movie not found</h1></body></html>');
+        res.end('<html><body><h1>Film not found</h1></body></html>');
         return;
       }
-      const movieScreenings = data.screenings.filter(s => s.movieId === movie.id);
+      const filmScreenings = data.screenings.filter(s => s.scheduledFilmId === film.id);
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(moviePage({ movie, screenings: movieScreenings, cinemas: data.cinemas, stale }));
+      res.end(filmPage({ film, screenings: filmScreenings, cinemas: data.cinemas, stale }));
       return;
     }
 
@@ -940,7 +987,7 @@ The stylesheet should include:
 - System font stack
 - Base element styles (body, headings, links, img)
 - Layout: header, main, banner
-- Components: `.movie-card`, `.movie-detail`, `.movie-poster`, `.screening`, `.screening-date`, `.movie-meta`, `.banner`
+- Components: `.film-card`, `.film-detail`, `.film-poster`, `.screening`, `.screening-date`, `.film-meta`, `.banner`
 - Mobile-first responsive adjustments
 
 **Note:** Exact values to be determined during implementation. The visual direction was deferred — start with a clean, functional baseline.
@@ -970,16 +1017,18 @@ import type { ScheduleData } from './types.ts';
 
 // Test fixture
 const fixture: ScheduleData = {
-  cinemas: [{ id: '1', name: 'Delphi LUX', slug: 'delphi-lux' }],
-  movies: [{
-    id: '42', title: 'Anora', slug: 'anora', originalTitle: 'Anora',
-    durationMinutes: 139, director: 'Sean Baker', year: 2024,
+  cinemas: [{ id: '0000000001', name: 'Delphi LUX', address: 'Kantstraße 10', city: 'Berlin' }],
+  films: [{
+    id: 'HO00004842', title: 'Anora',
+    runTime: '139', rating: 'FSK 16',
+    cast: ['Mikey Madison', 'Mark Eydelshteyn'],
   }],
   screenings: [{
-    movieId: '42', cinemaId: '1',
-    datetime: new Date(Date.now() + 3600000), // 1 hour from now
-    languageInfo: 'OmU',
-    bookingUrl: 'https://yorck.de/book/123',
+    id: 'sess-1', scheduledFilmId: 'HO00004842', cinemaId: '0000000001',
+    showtime: new Date(Date.now() + 3600000), // 1 hour from now
+    screenName: 'Saal 1', screenNumber: 1,
+    seatsAvailable: 42, soldoutStatus: 0,
+    attributes: ['OmU'],
   }],
   fetchedAt: new Date(),
 };
@@ -989,13 +1038,13 @@ describe('Server routes', () => {
   // an injected cache (instead of module-level singleton) for clean testing.
   // For now, test templates directly as a unit test.
 
-  it('home template renders movies', async () => {
+  it('home template renders films', async () => {
     const { homePage } = await import('./templates/home.ts');
     const html = homePage({ data: fixture, stale: false });
     assert.ok(html.includes('Anora'));
     assert.ok(html.includes('Delphi LUX'));
     assert.ok(html.includes('OmU'));
-    assert.ok(html.includes('/movies/anora'));
+    assert.ok(html.includes('/films/HO00004842'));
     assert.ok(html.includes('id="banner" class="banner" hidden'), 'banner should have hidden attribute when not stale');
   });
 
@@ -1006,16 +1055,16 @@ describe('Server routes', () => {
     assert.ok(html.includes('might be out of date'));
   });
 
-  it('movie template renders details', async () => {
-    const { moviePage } = await import('./templates/movie.ts');
-    const html = moviePage({
-      movie: fixture.movies[0],
+  it('film template renders details', async () => {
+    const { filmPage } = await import('./templates/film.ts');
+    const html = filmPage({
+      film: fixture.films[0],
       screenings: fixture.screenings,
       cinemas: fixture.cinemas,
       stale: false,
     });
     assert.ok(html.includes('Anora'));
-    assert.ok(html.includes('Sean Baker'));
+    assert.ok(html.includes('Mikey Madison'));
     assert.ok(html.includes('139 min'));
     assert.ok(html.includes('OmU'));
   });
@@ -1023,7 +1072,7 @@ describe('Server routes', () => {
   it('home template handles empty schedule', async () => {
     const { homePage } = await import('./templates/home.ts');
     const emptyData: ScheduleData = {
-      cinemas: [], movies: [], screenings: [], fetchedAt: new Date(),
+      cinemas: [], films: [], screenings: [], fetchedAt: new Date(),
     };
     const html = homePage({ data: emptyData, stale: false });
     assert.ok(html.includes('No upcoming screenings'));
