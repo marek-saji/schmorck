@@ -6,11 +6,11 @@ interface FilmPageOptions {
   film: Film;
   screenings: Screening[];
   cinemas: Cinema[];
-  stale: boolean;
+  fetchedAt?: Date;
   date?: string;
 }
 
-function filmPage({ film, screenings, cinemas, stale, date }: FilmPageOptions): string {
+function filmPage({ film, screenings, cinemas, fetchedAt, date }: FilmPageOptions): string {
   const cinemaMap = new Map(cinemas.map(c => [c.id, c]));
 
   const transitionName = date ? `poster-${film.id}-${date}` : `poster-${film.id}`;
@@ -83,7 +83,7 @@ function filmPage({ film, screenings, cinemas, stale, date }: FilmPageOptions): 
   </section>
 </article>`;
 
-  return layout({ title: film.title, stale, body });
+  return layout({ title: film.title, fetchedAt, body });
 }
 
 export { filmPage };

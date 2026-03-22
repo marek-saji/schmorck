@@ -4,10 +4,10 @@ import type { ScheduleData, Film, Screening, Cinema } from '../types.ts';
 
 interface HomeOptions {
   data: ScheduleData;
-  stale: boolean;
+  fetchedAt?: Date;
 }
 
-function homePage({ data, stale }: HomeOptions): string {
+function homePage({ data, fetchedAt }: HomeOptions): string {
   const { films, screenings, cinemas } = data;
   const filmMap = new Map(films.map(f => [f.id, f]));
   const cinemaMap = new Map(cinemas.map(c => [c.id, c]));
@@ -40,7 +40,7 @@ function homePage({ data, stale }: HomeOptions): string {
   }
 
   if (byDate.size === 0) {
-    return layout({ title: 'Schedule', stale, body: '<p>No upcoming screenings.</p>' });
+    return layout({ title: 'Schedule', fetchedAt, body: '<p>No upcoming screenings.</p>' });
   }
 
   const body = Array.from(byDate.entries()).map(([isoDate, { label, films: filmsForDate }]) => {
@@ -56,7 +56,7 @@ function homePage({ data, stale }: HomeOptions): string {
 </section>`;
   }).join('\n');
 
-  return layout({ title: 'Schedule', stale, body });
+  return layout({ title: 'Schedule', fetchedAt, body });
 }
 
 function filmCard(

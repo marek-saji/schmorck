@@ -93,7 +93,7 @@ const server = createServer(async (req, res) => {
 
     const entry = cache.get();
     const data = entry?.value;
-    const stale = !cache.isFresh();
+    const fetchedAt = !cache.isFresh() ? entry?.fetchedAt : undefined;
 
     // Home page
     if (url.pathname === '/') {
@@ -108,7 +108,7 @@ const server = createServer(async (req, res) => {
         htmlHeaders['Cache-Control'] = `public, max-age=${HTML_MAX_AGE_S}, must-revalidate`;
       }
       res.writeHead(200, htmlHeaders);
-      res.end(homePage({ data, stale }));
+      res.end(homePage({ data, fetchedAt }));
       return;
     }
 
@@ -165,7 +165,7 @@ const server = createServer(async (req, res) => {
         htmlHeaders['Cache-Control'] = `public, max-age=${HTML_MAX_AGE_S}, must-revalidate`;
       }
       res.writeHead(200, htmlHeaders);
-      res.end(filmPage({ film, screenings: filmScreenings, cinemas: data.cinemas, stale, date }));
+      res.end(filmPage({ film, screenings: filmScreenings, cinemas: data.cinemas, fetchedAt, date }));
       return;
     }
 
