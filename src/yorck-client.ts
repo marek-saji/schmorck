@@ -48,6 +48,7 @@ function mapVistaFilm(f: VistaFilm | VistaScheduledFilm): Film {
     writers: 'Cast' in f ? f.Cast?.filter(p => p.PersonType === 'Writer').map(p => `${p.FirstName} ${p.LastName}`.trim()) : undefined,
     cast: 'Cast' in f ? f.Cast?.filter(p => p.PersonType === 'Actor').map(p => `${p.FirstName} ${p.LastName}`.trim()) : undefined,
     rating: f.Rating,
+    releaseYear: f.OpeningDate ? new Date(f.OpeningDate).getFullYear() : undefined,
     openingDate: f.OpeningDate,
     trailerUrl: f.TrailerUrl,
   };
@@ -65,6 +66,7 @@ function mapYorckFilm(f: YorckFilm): Film {
     writers: undefined,
     cast: f.actors.length ? f.actors : undefined,
     rating: f.rating || undefined,
+    releaseYear: f.openingDate ? new Date(f.openingDate).getFullYear() : undefined,
     openingDate: f.openingDate,
     trailerUrl: f.trailerUrl || undefined,
   };

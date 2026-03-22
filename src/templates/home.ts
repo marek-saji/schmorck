@@ -88,7 +88,7 @@ function filmCard(
   </a>
   <div class="film-body">
     <a href="/films/${escapeHtml(film.slug)}?date=${isoDate}" class="film-title-link">
-      <h2 style="view-transition-name: title-${escapeHtml(film.id)}-${isoDate}" data-uncertain-lang>${escapeHtml(film.title)}</h2>
+      <h2 style="view-transition-name: title-${escapeHtml(film.id)}-${isoDate}"><span data-uncertain-lang>${escapeHtml(film.title)}</span>${film.releaseYear ? ` <span class="release-year">(${film.releaseYear})</span>` : ''}</h2>
     </a>
     ${meta ? `<p class="film-meta">${meta}</p>` : ''}
     ${film.synopsis ? `<p class="film-synopsis-short" lang="de">${escapeHtml(film.synopsis)}</p>` : ''}

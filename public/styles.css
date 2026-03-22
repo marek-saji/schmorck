@@ -246,6 +246,11 @@ footer {
   text-box: trim-both cap alphabetic;
 }
 
+.release-year {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-normal);
+}
+
 .film-meta {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);

@@ -18,6 +18,7 @@ interface Film {
   writers?: Array<string>;
   cast?: Array<string>;
   rating?: string;
+  releaseYear?: number;
   openingDate?: string;
   trailerUrl?: string;
 }
