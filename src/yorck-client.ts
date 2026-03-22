@@ -3,6 +3,11 @@ import type { VistaCinema, VistaFilm, VistaScheduledFilm, VistaSession, VistaODa
 import type { YorckAppLaunchData, YorckCinema, YorckFilm, YorckSession } from './types/api/yorck.ts';
 import { YORCK_VISTA_API_URL, YORCK_VISTA_API_KEY } from './lib/env.ts';
 import { slugify } from './lib/slug.ts';
+import { lookupFilm } from './trakt-client.ts';
+import { createFileStorage } from './lib/storage.ts';
+import { join } from 'node:path';
+
+const traktStorage = createFileStorage(join(import.meta.dirname, '..', 'storage'));
 
 // ── Cinema mappers ──
 
@@ -140,6 +145,14 @@ function mapApiResponse(raw: RawApiData): ScheduleData {
   };
 }
 
+async function enrichWithTrakt(data: ScheduleData): Promise<ScheduleData> {
+  const enrichedFilms = [];
+  for (const film of data.films) {
+    enrichedFilms.push(await lookupFilm(film, traktStorage));
+  }
+  return { ...data, films: enrichedFilms };
+}
+
 // ── Fetch ──
 
 const API_HEADERS: HeadersInit = {
@@ -167,11 +180,11 @@ async function fetchSchedule(): Promise<ScheduleData> {
         fetchJson<VistaODataResponse<VistaScheduledFilm>>('OData.svc/ScheduledFilms'),
         fetchJson<VistaODataResponse<VistaSession>>('OData.svc/Sessions'),
       ]);
-      return mapApiResponse({
+      return enrichWithTrakt(mapApiResponse({
         cinemas: cinemas.value,
         films: films.value,
         sessions: sessions.value,
-      });
+      }));
     }
     case 'yorck': {
       const [appLaunchData, films, sessions] = await Promise.all([
@@ -179,11 +192,11 @@ async function fetchSchedule(): Promise<ScheduleData> {
         fetchJson<Array<YorckFilm>>('api/mobile/v1/films'),
         fetchJson<Array<YorckSession>>('api/mobile/v1/sessions'),
       ]);
-      return mapApiResponse({
+      return enrichWithTrakt(mapApiResponse({
         appLaunchData,
         films,
         sessions,
-      });
+      }));
     }
     default:
       throw new Error(`Unsupported API type: ${API}`);

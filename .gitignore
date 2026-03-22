@@ -9,5 +9,8 @@
 *.local
 *.local.*
 
+# storage (Trakt cache)
+/storage
+
 # temporary files
 /.superpowers

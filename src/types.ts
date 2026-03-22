@@ -21,6 +21,9 @@ interface Film {
   releaseYear?: number;
   openingDate?: string;
   trailerUrl?: string;
+  originalTitle?: string;
+  traktId?: number;
+  traktSlug?: string;
 }
 
 interface Screening {

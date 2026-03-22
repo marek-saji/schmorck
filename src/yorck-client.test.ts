@@ -5,6 +5,8 @@ mock.module('./lib/env.ts', {
   namedExports: {
     YORCK_VISTA_API_KEY: 'test-key',
     YORCK_VISTA_API_URL: 'https://vista-yorck.test/',
+    TRAKT_CLIENT_ID: 'test-trakt-id',
+    TRAKT_CLIENT_SECRET: undefined,
     NODE_ENV: 'test',
     COMMIT_SHA: undefined,
   },

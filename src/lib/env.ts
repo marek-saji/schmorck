@@ -17,6 +17,9 @@ const PORT = Number(PORT_STR);
 const APP_URL = requireEnv('APP_URL');
 if (!URL.canParse(APP_URL)) throw new Error('APP_URL environment variable is not a valid URL');
 
+const TRAKT_CLIENT_ID = requireEnv('TRAKT_CLIENT_ID');
+const TRAKT_CLIENT_SECRET = process.env.TRAKT_CLIENT_SECRET;
+
 const NODE_ENV = process.env.NODE_ENV ?? 'development';
 
 const COMMIT_SHA = process.env.GIT_SHA
@@ -28,4 +31,4 @@ const COMMIT_SHA = process.env.GIT_SHA
   || process.env.COMMIT_REF
   || process.env.RENDER_GIT_COMMIT;
 
-export { YORCK_VISTA_API_KEY, YORCK_VISTA_API_URL, PORT, APP_URL, NODE_ENV, COMMIT_SHA };
+export { YORCK_VISTA_API_KEY, YORCK_VISTA_API_URL, PORT, APP_URL, TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET, NODE_ENV, COMMIT_SHA };
