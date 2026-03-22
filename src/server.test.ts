@@ -83,6 +83,7 @@ mock.method(globalThis, 'fetch', async (input: RequestInfo | URL) => {
   // Vista OData
   if (url.includes('OData.svc/Cinemas')) return Response.json(vistaFixtures.cinemas);
   if (url.includes('OData.svc/ScheduledFilms')) return Response.json(vistaFixtures.films);
+  if (url.includes('OData.svc/Films')) return Response.json(vistaFixtures.films);
   if (url.includes('OData.svc/Sessions')) return Response.json(vistaFixtures.sessions);
   // Yorck mobile
   if (url.includes('api/mobile/v1/app-launch-data')) return Response.json(yorckFixtures.appLaunchData);

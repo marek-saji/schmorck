@@ -30,7 +30,7 @@ interface Screening {
   screenName?: string;
   screenNumber?: number;
   seatsAvailable?: number;
-  soldoutStatus?: 0 | 1 | 2;
+  soldout?: 'no' | 'almost' | 'yes';
   attributes?: Array<string>;
 }
 
