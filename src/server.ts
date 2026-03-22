@@ -7,6 +7,7 @@ import { Cache } from './cache.ts';
 import { fetchSchedule } from './yorck-client.ts';
 import { homePage } from './templates/home.ts';
 import { filmPage } from './templates/film.ts';
+import { designSystemPage } from './templates/design-system.ts';
 import type { ScheduleData } from './types.ts';
 
 const CACHING_ENABLED = NODE_ENV !== 'development' && !!COMMIT_SHA;
@@ -166,6 +167,13 @@ const server = createServer(async (req, res) => {
       }
       res.writeHead(200, htmlHeaders);
       res.end(filmPage({ film, screenings: filmScreenings, cinemas: data.cinemas, fetchedAt, date }));
+      return;
+    }
+
+    // Design system
+    if (url.pathname === '/design-system') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(designSystemPage());
       return;
     }
 
