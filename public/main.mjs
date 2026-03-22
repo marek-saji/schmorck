@@ -23,7 +23,7 @@ function updateRelativeTimes() {
 
 updateRelativeTimes();
 
-// ── Translate German synopses via Chrome Translator API ──
+// ── Translate German text via Chrome Translator & Language Detector APIs ──
 
 /**
  * @param {HTMLElement} el
@@ -37,37 +37,62 @@ async function translateElement(el, translator) {
       const translated = await translator.translate(original);
       el.innerHTML = '<span class="translated-badge">translated</span> ' + translated;
       el.lang = 'en';
-      resolve()
-    })
-  })
+      resolve();
+    });
+  });
+}
+
+/**
+ * @param {Translator} translator
+ * @param {LanguageDetector | null} detector
+ */
+async function translateAll(translator, detector) {
+  /** @type {NodeListOf<HTMLElement>} */
+  const elements = document.querySelectorAll('[lang="de"], [data-uncertain-lang]');
+  for (const el of elements) {
+    if (el.hasAttribute('data-uncertain-lang')) {
+      const text = el.textContent?.trim();
+      if (!text || !detector) continue;
+      const results = await detector.detect(text);
+      const lang = results[0]?.detectedLanguage;
+      if (!lang) continue;
+      el.lang = lang;
+      el.removeAttribute('data-uncertain-lang');
+      if (lang !== 'de') continue;
+    }
+    await translateElement(el, translator);
+  }
 }
 
 requestIdleCallback(async () => {
   if (!('Translator' in globalThis)) return;
 
-  const availability = await Translator.availability({
+  const translatorAvailability = await Translator.availability({
     sourceLanguage: 'de',
     targetLanguage: 'en',
   });
-  if (availability === 'unavailable') return;
+  if (translatorAvailability === 'unavailable') return;
+
+  const hasDetector = 'LanguageDetector' in globalThis;
+  const detectorAvailable = hasDetector && await LanguageDetector.availability() === 'available';
 
   /** @type {NodeListOf<HTMLElement>} */
-  const elements = document.querySelectorAll('[lang="de"]');
+  const elements = document.querySelectorAll('[lang="de"], [data-uncertain-lang]');
   if (elements.length === 0) return;
 
-  if (availability === 'available') {
+  if (translatorAvailability === 'available') {
     const translator = await Translator.create({
       sourceLanguage: 'de',
       targetLanguage: 'en',
     });
-    for (const el of elements) {
-      await translateElement(el, translator);
-    }
+    const detector = detectorAvailable ? await LanguageDetector.create() : null;
+    await translateAll(translator, detector);
     return;
   }
 
-  // downloadable or downloading — show button
+  // downloadable or downloading — show button on [lang="de"] elements only
   for (const el of elements) {
+    if (el.hasAttribute('data-uncertain-lang')) continue;
     const btn = document.createElement('button');
     btn.textContent = 'Translate';
     btn.className = 'translate-btn';
@@ -78,9 +103,8 @@ requestIdleCallback(async () => {
         sourceLanguage: 'de',
         targetLanguage: 'en',
       });
-      for (const el of elements) {
-        await translateElement(el, translator);
-      }
+      const detector = detectorAvailable ? await LanguageDetector.create() : null;
+      await translateAll(translator, detector);
       for (const b of document.querySelectorAll('.translate-btn')) {
         b.remove();
       }

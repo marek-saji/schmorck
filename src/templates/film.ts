@@ -65,7 +65,7 @@ function filmPage({ film, screenings, cinemas, fetchedAt, date }: FilmPageOption
       }).join('\n');
 
   const body = `<article class="film-detail">
-  <h1 class="film-detail-title" style="view-transition-name: title-${escapeHtml(film.id)}${date ? `-${date}` : ''}">${escapeHtml(film.title)}</h1>
+  <h1 class="film-detail-title" style="view-transition-name: title-${escapeHtml(film.id)}${date ? `-${date}` : ''}" data-uncertain-lang>${escapeHtml(film.title)}</h1>
   ${poster}
   <div class="film-detail-info">
     ${meta ? `<p class="film-meta">${escapeHtml(meta)}</p>` : ''}

@@ -27,3 +27,25 @@ interface TranslatorConstructor {
 }
 
 declare const Translator: TranslatorConstructor;
+
+/** Chrome Language Detector API (Chrome 138+) */
+
+interface LanguageDetectorCreateOptions {
+  monitor?(m: TranslatorDownloadMonitor): void;
+}
+
+interface LanguageDetectionResult {
+  detectedLanguage: string;
+  confidence: number;
+}
+
+interface LanguageDetector {
+  detect(text: string): Promise<Array<LanguageDetectionResult>>;
+}
+
+interface LanguageDetectorConstructor {
+  availability(): Promise<'available' | 'downloadable' | 'downloading' | 'unavailable'>;
+  create(options?: LanguageDetectorCreateOptions): Promise<LanguageDetector>;
+}
+
+declare const LanguageDetector: LanguageDetectorConstructor;
