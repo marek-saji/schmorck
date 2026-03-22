@@ -4,13 +4,13 @@ import { YORCK_VISTA_API_URL, YORCK_VISTA_API_KEY } from './lib/env.ts';
 import { slugify } from './lib/slug.ts';
 
 interface RawApiData {
-  cinemas: VistaCinema[];
-  films: VistaScheduledFilm[];
-  sessions: VistaSession[];
+  cinemas: Array<VistaCinema>;
+  films: Array<VistaScheduledFilm>;
+  sessions: Array<VistaSession>;
 }
 
 function mapApiResponse(raw: RawApiData): ScheduleData {
-  const cinemas: Cinema[] = raw.cinemas.map(c => ({
+  const cinemas: Array<Cinema> = raw.cinemas.map(c => ({
     id: c.ID,
     name: c.Name,
     address: [c.Address1, c.Address2].filter(Boolean).join(', ') || undefined,
@@ -40,7 +40,7 @@ function mapApiResponse(raw: RawApiData): ScheduleData {
   }
   const films = [...filmsById.values()];
 
-  const screenings: Screening[] = raw.sessions.map(s => ({
+  const screenings: Array<Screening> = raw.sessions.map(s => ({
     id: s.SessionId,
     scheduledFilmId: s.ScheduledFilmId,
     cinemaId: s.CinemaId,

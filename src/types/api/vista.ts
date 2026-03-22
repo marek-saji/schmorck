@@ -6,7 +6,7 @@
 // ── OData response wrapper ──
 
 export interface VistaODataResponse<T> {
-  value: T[];
+  value: Array<T>;
 }
 
 // ── OData.svc/Cinemas ──
@@ -48,15 +48,15 @@ export interface VistaCinema {
   AlternateDataLanguage2?: string;
   AlternateDataLanguage3?: string;
   HasConcessions?: boolean;
-  ScheduledFilms?: VistaScheduledFilm[];
-  ScreenAttributes?: VistaAttribute[];
+  ScheduledFilms?: Array<VistaScheduledFilm>;
+  ScreenAttributes?: Array<VistaAttribute>;
   /** Concepts (Experiences) at this Cinema */
-  ConceptAttributes?: VistaAttribute[];
-  CinemaOperators?: VistaCinemaOperator[];
-  NameTranslations?: VistaTranslation[];
-  DescriptionTranslations?: VistaTranslation[];
-  ParkingInfoTranslations?: VistaTranslation[];
-  PublicTransportTranslations?: VistaTranslation[];
+  ConceptAttributes?: Array<VistaAttribute>;
+  CinemaOperators?: Array<VistaCinemaOperator>;
+  NameTranslations?: Array<VistaTranslation>;
+  DescriptionTranslations?: Array<VistaTranslation>;
+  ParkingInfoTranslations?: Array<VistaTranslation>;
+  PublicTransportTranslations?: Array<VistaTranslation>;
 }
 
 // ── OData.svc/Films ──
@@ -82,7 +82,7 @@ export interface VistaFilm {
   GraphicUrl?: string;
   FilmNameUrl?: string;
   TrailerUrl?: string;
-  AdditionalUrls?: VistaAdditionalUrl[];
+  AdditionalUrls?: Array<VistaAdditionalUrl>;
   IsComingSoon?: boolean;
   IsScheduledAtCinema?: boolean;
   WebsiteUrl?: string;
@@ -90,7 +90,7 @@ export interface VistaFilm {
   GenreId2?: string;
   GenreId3?: string;
   EDICode?: string;
-  FormatCodes?: string[];
+  FormatCodes?: Array<string>;
   TwitterTag?: string;
   FilmWebId?: string;
   MovieXchangeCode?: string;
@@ -98,10 +98,10 @@ export interface VistaFilm {
   GovernmentCode?: string;
   CustomerRatingStatistics?: VistaCustomerRatingStatistics;
   CustomerRatingTrailerStatistics?: VistaCustomerRatingStatistics;
-  TitleTranslations?: VistaTranslation[];
-  SynopsisTranslations?: VistaTranslation[];
-  ShortSynopsisTranslations?: VistaTranslation[];
-  RatingDescriptionTranslations?: VistaTranslation[];
+  TitleTranslations?: Array<VistaTranslation>;
+  SynopsisTranslations?: Array<VistaTranslation>;
+  ShortSynopsisTranslations?: Array<VistaTranslation>;
+  RatingDescriptionTranslations?: Array<VistaTranslation>;
 }
 
 // ── OData.svc/ScheduledFilms ──
@@ -127,7 +127,7 @@ export interface VistaScheduledFilm {
   RunTime?: string;
   TrailerUrl?: string;
   /** Cast and crew including Actors, Directors and Producers */
-  Cast?: VistaFilmPerson[];
+  Cast?: Array<VistaFilmPerson>;
   DisplaySequence?: number;
   TwitterTag?: string;
   HasSessionsAvailable?: boolean;
@@ -146,7 +146,7 @@ export interface VistaScheduledFilm {
   LoyaltyAdvanceBookingDateOffset?: string;
   HasDynamicallyPricedTicketsAvailable?: boolean;
   IsPlayThroughMarketingFilm?: boolean;
-  PlayThroughFilms?: VistaScheduledFilm[];
+  PlayThroughFilms?: Array<VistaScheduledFilm>;
   CustomerRatingStatistics?: VistaCustomerRatingStatistics;
   CustomerRatingTrailerStatistics?: VistaCustomerRatingStatistics;
   /** Date-time string */
@@ -157,9 +157,9 @@ export interface VistaScheduledFilm {
   CorporateFilmId?: string;
   EDICode?: string;
   GovernmentCode?: string;
-  Sessions?: VistaSession[];
-  FirstDaysSessions?: VistaSession[];
-  FutureSessions?: VistaSession[];
+  Sessions?: Array<VistaSession>;
+  FirstDaysSessions?: Array<VistaSession>;
+  FutureSessions?: Array<VistaSession>;
   HasFutureSessions?: boolean;
 }
 
@@ -170,7 +170,7 @@ export interface VistaSession {
   CinemaId: string;
   ScheduledFilmId: string;
   SessionId: string;
-  AreaCategoryCodes?: string[];
+  AreaCategoryCodes?: Array<string>;
   MinimumTicketPriceInCents?: number;
   /** Local time of session (in timezone of cinema location) */
   Showtime: string;
@@ -189,11 +189,11 @@ export interface VistaSession {
   FormatCode?: string;
   FormatHOPK?: string;
   SalesChannels?: string;
-  Attributes?: VistaAttribute[];
+  Attributes?: Array<VistaAttribute>;
   /** Attribute Short Names for session advertising */
-  SessionAttributesNames?: string[];
+  SessionAttributesNames?: Array<string>;
   /** Attribute Short Names for concepts/experiences */
-  ConceptAttributesNames?: string[];
+  ConceptAttributesNames?: Array<string>;
   AllowTicketSales?: boolean;
   HasDynamicallyPricedTicketsAvailable?: boolean;
   PlayThroughId?: string;

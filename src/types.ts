@@ -14,9 +14,9 @@ interface Film {
   posterUrl: string;
   synopsis?: string;
   runTime?: string;
-  directors?: string[];
-  writers?: string[];
-  cast?: string[];
+  directors?: Array<string>;
+  writers?: Array<string>;
+  cast?: Array<string>;
   rating?: string;
   openingDate?: string;
   trailerUrl?: string;
@@ -31,13 +31,13 @@ interface Screening {
   screenNumber?: number;
   seatsAvailable?: number;
   soldoutStatus?: 0 | 1 | 2;
-  attributes?: string[];
+  attributes?: Array<string>;
 }
 
 interface ScheduleData {
-  cinemas: Cinema[];
-  films: Film[];
-  screenings: Screening[];
+  cinemas: Array<Cinema>;
+  films: Array<Film>;
+  screenings: Array<Screening>;
 }
 
 export type { Cinema, Film, Screening, ScheduleData };

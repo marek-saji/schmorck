@@ -4,8 +4,8 @@ import type { Film, Screening, Cinema } from '../types.ts';
 
 interface FilmPageOptions {
   film: Film;
-  screenings: Screening[];
-  cinemas: Cinema[];
+  screenings: Array<Screening>;
+  cinemas: Array<Cinema>;
   fetchedAt?: Date;
   date?: string;
 }
@@ -34,7 +34,7 @@ function filmPage({ film, screenings, cinemas, fetchedAt, date }: FilmPageOption
     .filter(s => s.showtime > now)
     .sort((a, b) => a.showtime.getTime() - b.showtime.getTime());
 
-  const byDate = new Map<string, { label: string; screenings: Screening[] }>();
+  const byDate = new Map<string, { label: string; screenings: Array<Screening> }>();
   for (const s of upcoming) {
     const isoDate = s.showtime.toISOString().slice(0, 10);
     let group = byDate.get(isoDate);

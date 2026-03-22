@@ -21,7 +21,7 @@ function homePage({ data, fetchedAt }: HomeOptions): string {
     .sort((a, b) => a.showtime.getTime() - b.showtime.getTime());
 
   // Group screenings: isoDate → filmId → screenings
-  const byDate = new Map<string, { label: string; films: Map<string, Screening[]> }>();
+  const byDate = new Map<string, { label: string; films: Map<string, Array<Screening>> }>();
   for (const s of upcoming) {
     const isoDate = s.showtime.toISOString().slice(0, 10);
     let dateGroup = byDate.get(isoDate);
@@ -61,7 +61,7 @@ function homePage({ data, fetchedAt }: HomeOptions): string {
 
 function filmCard(
   film: Film,
-  screenings: Screening[],
+  screenings: Array<Screening>,
   cinemaMap: Map<string, Cinema>,
   isoDate: string,
 ): string {
