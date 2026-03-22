@@ -11,6 +11,8 @@ const TRAKT_HEADERS: HeadersInit = {
   'trakt-api-version': '2',
 };
 
+const STORAGE_KEY_PREFIX = 'trakt-';
+
 let rateLimitRemaining = 1_000;
 
 async function traktFetch<T>(path: string): Promise<T> {
@@ -47,7 +49,9 @@ async function searchMovie(title: string, year?: number): Promise<TraktSearchRes
   const params = new URLSearchParams({ query: title, fields: 'title' });
   if (year) params.set('years', String(year));
   const results = await traktFetch<Array<TraktSearchResult>>(`/search/movie?${params}`);
-  return results[0] ?? null;
+  return results.find(result => {
+    return year == null || Math.abs(result.movie.year - year) <= 2;
+  }) ?? results[0]
 }
 
 async function getMovieDetails(id: number): Promise<TraktMovie> {
@@ -58,24 +62,43 @@ async function getMoviePeople(id: number): Promise<TraktPeople> {
   return traktFetch<TraktPeople>(`/movies/${id}/people`);
 }
 
-interface StoredTraktData {
+interface StoredTraktDataFull {
   movie: TraktMovie;
   people: TraktPeople;
   fetchedAt: string;
 }
 
+interface StoredTraktDataEmpty {
+  movie: null;
+  fetchedAt: string;
+}
+
+type StoredTraktData = StoredTraktDataFull | StoredTraktDataEmpty;
+
 async function lookupFilm(film: Film, storage: Storage): Promise<Film> {
   // Check storage first
-  const stored = await storage.get<StoredTraktData>(film.id);
+  const stored = await storage.get<StoredTraktData>(
+    STORAGE_KEY_PREFIX + film.id
+  );
   if (stored) {
-    return enrichFilm(film, stored.movie, stored.people);
+    if (stored.movie === null) {
+      return film
+    } else {
+      return enrichFilm(film, stored.movie, stored.people);
+    }
   }
 
   // Search on Trakt
   try {
     const result = await searchMovie(film.title, film.releaseYear);
+    const fetchedAt = new Date().toISOString();
+
     if (!result) {
-      console.log(`Trakt: no match for "${film.title}"`);
+      await storage.set(STORAGE_KEY_PREFIX + film.id, {
+        movie: null,
+        fetchedAt,
+      });
+      console.log(`Trakt: no match for "${film.title} (${film.releaseYear}) [${film.id}]"`);
       return film;
     }
 
@@ -84,16 +107,16 @@ async function lookupFilm(film: Film, storage: Storage): Promise<Film> {
       getMoviePeople(result.movie.ids.trakt),
     ]);
 
-    await storage.set(film.id, {
+    await storage.set(STORAGE_KEY_PREFIX + film.id, {
       movie,
       people,
-      fetchedAt: new Date().toISOString(),
+      fetchedAt,
     } satisfies StoredTraktData);
 
-    console.log(`Trakt: matched "${film.title}" → "${movie.title}" (${movie.ids.trakt})`);
+    console.log(`Trakt: matched "${film.title}" (${film.releaseYear}) [${film.id}] → "${movie.title}" (${movie.year}) [${movie.ids.trakt}]`);
     return enrichFilm(film, movie, people);
   } catch (err) {
-    console.error(`Trakt: failed to look up "${film.title}":`, err);
+    console.error(`Trakt: failed to look up "${film.title}" (${film.releaseYear}) [${film.id}]:`, err);
     return film;
   }
 }
