@@ -1,7 +1,8 @@
 import { escapeHtml } from './html.ts';
+import { slugify } from './slug.ts';
 
 function arraysEqual(a: Array<string>, b: Array<string>): boolean {
-  return a.length === b.length && a.every((v, i) => v === b[i]);
+  return a.length === b.length && a.every((v, i) => slugify(v) === slugify(b[i]));
 }
 
 interface CreditOptions {
