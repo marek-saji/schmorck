@@ -83,7 +83,7 @@ function filmCard(
   }).join('\n');
 
   return `<article class="film-card"${film.traktId ? ` data-trakt-id="${film.traktId}"` : ''}>
-  <a href="/films/${escapeHtml(film.slug)}?date=${isoDate}" class="film-poster-link">
+  <a href="/films/${escapeHtml(film.slug)}?date=${isoDate}" class="film-poster-link" tabindex="-1">
     ${poster}
   </a>
   <div class="film-body">
