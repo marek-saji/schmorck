@@ -1,46 +1,81 @@
 import type { Cinema, Film, Screening, ScheduleData } from './types.ts';
 import type { VistaCinema, VistaScheduledFilm, VistaSession, VistaODataResponse } from './types/api/vista.ts';
+import type { YorckAppLaunchData, YorckCinema, YorckFilm, YorckSession } from './types/api/yorck.ts';
 import { YORCK_VISTA_API_URL, YORCK_VISTA_API_KEY } from './lib/env.ts';
 import { slugify } from './lib/slug.ts';
 
-interface RawApiData {
-  cinemas: Array<VistaCinema>;
-  films: Array<VistaScheduledFilm>;
-  sessions: Array<VistaSession>;
-}
+// ── Cinema mappers ──
 
-function mapApiResponse(raw: RawApiData): ScheduleData {
-  const cinemas: Array<Cinema> = raw.cinemas.map(c => ({
+function mapVistaCinema(c: VistaCinema): Cinema {
+  return {
     id: c.ID,
     name: c.Name,
     address: [c.Address1, c.Address2].filter(Boolean).join(', ') || undefined,
     city: c.City,
     latitude: c.Latitude,
     longitude: c.Longitude,
-  }));
+  };
+}
 
-  const filmsById = new Map<string, Film>();
-  for (const f of raw.films) {
-    if (!filmsById.has(f.ScheduledFilmId)) {
-      filmsById.set(f.ScheduledFilmId, {
-        id: f.ScheduledFilmId,
-        slug: slugify(f.Title),
-        title: f.Title,
-        posterUrl: f.GraphicUrl || `/films/${slugify(f.Title)}/poster`,
-        synopsis: f.Synopsis,
-        runTime: f.RunTime,
-        directors: f.Cast?.filter(p => p.PersonType === 'Director').map(p => `${p.FirstName} ${p.LastName}`.trim()),
-        writers: f.Cast?.filter(p => p.PersonType === 'Writer').map(p => `${p.FirstName} ${p.LastName}`.trim()),
-        cast: f.Cast?.filter(p => p.PersonType === 'Actor').map(p => `${p.FirstName} ${p.LastName}`.trim()),
-        rating: f.Rating,
-        openingDate: f.OpeningDate,
-        trailerUrl: f.TrailerUrl,
-      });
-    }
-  }
-  const films = [...filmsById.values()];
+function mapYorckCinema(c: YorckCinema): Cinema {
+  return {
+    id: c.id,
+    name: c.name,
+    address: [c.address1, c.address2].filter(Boolean).join(', ') || undefined,
+    city: c.city || undefined,
+    latitude: c.latitude,
+    longitude: c.longitude,
+  };
+}
 
-  const screenings: Array<Screening> = raw.sessions.map(s => ({
+function mapCinema(c: VistaCinema | YorckCinema): Cinema {
+  return 'ID' in c ? mapVistaCinema(c) : mapYorckCinema(c);
+}
+
+// ── Film mappers ──
+
+function mapVistaFilm(f: VistaScheduledFilm): Film {
+  return {
+    id: f.ScheduledFilmId,
+    slug: slugify(f.Title),
+    title: f.Title,
+    posterUrl: f.GraphicUrl || `/films/${slugify(f.Title)}/poster`,
+    synopsis: f.Synopsis,
+    runTime: f.RunTime,
+    directors: f.Cast?.filter(p => p.PersonType === 'Director').map(p => `${p.FirstName} ${p.LastName}`.trim()),
+    writers: f.Cast?.filter(p => p.PersonType === 'Writer').map(p => `${p.FirstName} ${p.LastName}`.trim()),
+    cast: f.Cast?.filter(p => p.PersonType === 'Actor').map(p => `${p.FirstName} ${p.LastName}`.trim()),
+    rating: f.Rating,
+    openingDate: f.OpeningDate,
+    trailerUrl: f.TrailerUrl,
+  };
+}
+
+function mapYorckFilm(f: YorckFilm): Film {
+  return {
+    id: f.id,
+    slug: slugify(f.title),
+    title: f.title,
+    posterUrl: `/films/${slugify(f.title)}/poster`,
+    synopsis: f.synopsis || undefined,
+    runTime: f.runTime ? String(f.runTime) : undefined,
+    directors: f.directors.length ? f.directors : undefined,
+    writers: undefined,
+    cast: f.actors.length ? f.actors : undefined,
+    rating: f.rating || undefined,
+    openingDate: f.openingDate,
+    trailerUrl: f.trailerUrl || undefined,
+  };
+}
+
+function mapFilm(f: VistaScheduledFilm | YorckFilm): Film {
+  return 'ScheduledFilmId' in f ? mapVistaFilm(f) : mapYorckFilm(f);
+}
+
+// ── Session mappers ──
+
+function mapVistaSession(s: VistaSession): Screening {
+  return {
     id: s.SessionId,
     scheduledFilmId: s.ScheduledFilmId,
     cinemaId: s.CinemaId,
@@ -50,10 +85,49 @@ function mapApiResponse(raw: RawApiData): ScheduleData {
     seatsAvailable: s.SeatsAvailable,
     soldoutStatus: s.SoldoutStatus,
     attributes: s.SessionAttributesNames,
-  }));
-
-  return { cinemas, films, screenings };
+  };
 }
+
+function mapYorckSession(s: YorckSession): Screening {
+  return {
+    id: s.sessionId,
+    scheduledFilmId: s.filmId,
+    cinemaId: s.cinemaId,
+    showtime: new Date(s.showtime),
+    screenName: s.screenName,
+    screenNumber: s.screenNumber,
+    seatsAvailable: s.seatsAvailable,
+    soldoutStatus: s.soldoutStatus,
+    attributes: s.attributeShortNames,
+  };
+}
+
+function mapSession(s: VistaSession | YorckSession): Screening {
+  return 'SessionId' in s ? mapVistaSession(s) : mapYorckSession(s);
+}
+
+// ── Unified mapper ──
+
+interface RawApiData {
+  cinemas?: Array<VistaCinema>;
+  appLaunchData?: YorckAppLaunchData;
+  films: Array<VistaScheduledFilm | YorckFilm>;
+  sessions: Array<VistaSession | YorckSession>;
+}
+
+function mapApiResponse(raw: RawApiData): ScheduleData {
+  const uniqueFilms = [...(new Map<string, VistaScheduledFilm | YorckFilm>(
+    raw.films.map(f => ['ScheduledFilmId' in f ? f.ScheduledFilmId : f.id, f])
+  ).values())];
+
+  return {
+    cinemas: (raw.cinemas ?? raw.appLaunchData?.cinemas ?? []).map(mapCinema),
+    films: uniqueFilms.map(mapFilm),
+    screenings: raw.sessions.map(mapSession),
+  };
+}
+
+// ── Fetch ──
 
 const API_HEADERS: HeadersInit = {
   'Accept': 'application/json',
@@ -72,6 +146,8 @@ async function fetchJson<T>(path: string): Promise<T> {
 }
 
 async function fetchSchedule(): Promise<ScheduleData> {
+  /*
+  // Vista API
   const [cinemas, films, sessions] = await Promise.all([
     fetchJson<VistaODataResponse<VistaCinema>>('OData.svc/Cinemas'),
     fetchJson<VistaODataResponse<VistaScheduledFilm>>('OData.svc/ScheduledFilms'),
@@ -82,6 +158,20 @@ async function fetchSchedule(): Promise<ScheduleData> {
     films: films.value,
     sessions: sessions.value,
   });
+  */
+
+  // Yorck API
+  const [appLaunchData, films, sessions] = await Promise.all([
+    fetchJson<YorckAppLaunchData>('api/mobile/v1/app-launch-data'),
+    fetchJson<Array<YorckFilm>>('api/mobile/v1/films'),
+    fetchJson<Array<YorckSession>>('api/mobile/v1/sessions'),
+  ]);
+  return mapApiResponse({
+    appLaunchData,
+    films,
+    sessions,
+  });
 }
 
 export { mapApiResponse, fetchSchedule };
+export type { RawApiData };
