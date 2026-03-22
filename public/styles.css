@@ -57,6 +57,10 @@
   --thickness-border: 1px;
   --thickness-highlight: 3px;
 
+  --z-title: 1;
+  --z-date: 2;
+  --z-banner: 3;
+
   --radius-sm: 4px;
   --radius-md: 8px;
 
@@ -161,6 +165,9 @@ footer {
 
 /* ── Banner ── */
 .banner {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-banner);
   padding: var(--spacing-sm) var(--spacing-lg);
   background: var(--color-info);
   color: var(--color-banner-text);
@@ -195,7 +202,7 @@ footer {
   order: -1;
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: var(--z-date);
   container-type: scroll-state;
   padding: var(--spacing-sm) var(--spacing-md);
   margin: 0 calc(-1 * var(--spacing-lg));
@@ -206,7 +213,7 @@ footer {
     z-index: auto;
   }
   @container scroll-state(stuck: top) {
-    z-index: 2;
+    z-index: var(--z-date);
   }
 }
 
@@ -251,7 +258,7 @@ footer {
 .film-title-link {
   position: sticky;
   top: calc(var(--font-size-xxl) + 2 * var(--spacing-sm));
-  z-index: 1;
+  z-index: var(--z-title);
   container-type: scroll-state;
   display: block;
   padding: var(--spacing-md) 0 var(--spacing-sm);
@@ -263,7 +270,7 @@ footer {
     z-index: auto;
   }
   @container scroll-state(stuck: top) {
-    z-index: 1;
+    z-index: var(--z-title);
   }
 }
 
@@ -359,7 +366,7 @@ a.screening:hover {
   grid-column: 1 / -1;
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: var(--z-title);
   container-type: scroll-state;
   padding: var(--spacing-md) 0 var(--spacing-sm);
   margin: 0 0 calc(var(--spacing-md) - var(--spacing-sm));
@@ -371,7 +378,7 @@ a.screening:hover {
     z-index: auto;
   }
   @container scroll-state(stuck: top) {
-    z-index: 1;
+    z-index: var(--z-title);
   }
 }
 
