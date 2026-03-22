@@ -10,11 +10,12 @@
   --_palette-black-100: oklch(0.9 0.02 275);
   --_palette-black-900: oklch(from var(--_palette-black-100) 0.1 c h);
 
-  --_palette-gray-100: oklch(0.9 0.02 275);
+  --_palette-gray-100: oklch(0.9 0.035 255);
   --_palette-gray-200: oklch(from var(--_palette-gray-100) 0.8 c h);
   --_palette-gray-400: oklch(from var(--_palette-gray-100) 0.6 c h);
   --_palette-gray-600: oklch(from var(--_palette-gray-100) 0.4 c h);
   --_palette-gray-800: oklch(from var(--_palette-gray-100) 0.2 c h);
+  --_palette-gray-900: oklch(from var(--_palette-gray-100) 0.1 c h);
 
   --_palette-red-100: oklch(0.9 0.22 25);
   --_palette-red-400: oklch(from var(--_palette-red-100) 0.6 c h);
@@ -80,7 +81,7 @@
 /* ── Dark mode ── */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: var(--_palette-black-900);
+    --color-bg: var(--_palette-gray-900);
     --color-surface: var(--_palette-gray-800);
     --color-text: var(--_palette-gray-100);
     --color-text-muted: var(--_palette-gray-400);
