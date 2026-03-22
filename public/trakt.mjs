@@ -87,9 +87,8 @@ if (accessToken) {
         } else {
           watchlistIds.add(traktId);
         }
-        // Update all cards with this trakt ID
+        // Update bookmark buttons only (don't change data-* to avoid reordering)
         for (const c of document.querySelectorAll(`.film-card[data-trakt-id="${traktId}"]`)) {
-          /** @type {HTMLElement} */ (c).dataset.watchlist = String(watchlistIds.has(traktId));
           const b = c.querySelector('.watchlist-btn');
           if (b) updateBookmark(/** @type {HTMLButtonElement} */ (b), watchlistIds.has(traktId));
         }
