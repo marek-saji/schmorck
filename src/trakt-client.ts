@@ -45,13 +45,13 @@ async function traktFetch<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-async function searchMovie(title: string, year?: number): Promise<TraktSearchResult | null> {
+async function searchMovie(title: string, year: number): Promise<TraktSearchResult | null> {
   const params = new URLSearchParams({ query: title, fields: 'title' });
   if (year) params.set('years', String(year));
   const results = await traktFetch<Array<TraktSearchResult>>(`/search/movie?${params}`);
   return results.find(result => {
     return year == null || Math.abs(result.movie.year - year) <= 2;
-  }) ?? results[0]
+  }) ?? null
 }
 
 async function getMovieDetails(id: number): Promise<TraktMovie> {
@@ -76,6 +76,12 @@ interface StoredTraktDataEmpty {
 type StoredTraktData = StoredTraktDataFull | StoredTraktDataEmpty;
 
 async function lookupFilm(film: Film, storage: Storage): Promise<Film> {
+  const releaseYear = film.releaseYear;
+
+  if (!releaseYear) {
+    return film;
+  }
+
   // Check storage first
   const stored = await storage.get<StoredTraktData>(
     STORAGE_KEY_PREFIX + film.id
@@ -90,7 +96,8 @@ async function lookupFilm(film: Film, storage: Storage): Promise<Film> {
 
   // Search on Trakt
   try {
-    const result = await searchMovie(film.title, film.releaseYear);
+    const normalizedTitle = film.title.replace(/[",']/g, '').trim();
+    const result = await searchMovie(normalizedTitle, releaseYear);
     const fetchedAt = new Date().toISOString();
 
     if (!result) {
@@ -135,7 +142,9 @@ function enrichFilm(film: Film, movie: TraktMovie, people: TraktPeople): Film {
     directors: film.directors?.length ? film.directors : (directors?.length ? directors : undefined),
     writers: film.writers?.length ? film.writers : (writers?.length ? writers : undefined),
     cast: film.cast?.length ? film.cast : (cast?.length ? cast : undefined),
-    releaseYear: film.releaseYear ?? movie.year,
+    // We pick Trakt.tv year over the Yorck one, because Yorck sometimes
+    // includes incorrect year for re–releases
+    releaseYear: movie.year ?? film.releaseYear,
   };
 }
 
