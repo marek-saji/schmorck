@@ -25,42 +25,45 @@ updateRelativeTimes();
 
 // ── Translate German text via Chrome Translator & Language Detector APIs ──
 
+const TRANSLATE_SELECTOR = '[lang="de"]:not(.original-text), [data-uncertain-lang]:not([lang])';
+
+/** @type {Map<string, string>} */
+const translationCache = new Map();
+
 /**
  * @param {HTMLElement} el
  * @param {Translator} translator
- */
-async function translateElement(el, translator) {
-  const original = el.textContent;
-  if (!original?.trim()) return;
-  return new Promise(resolve => {
-    requestIdleCallback(async () => {
-      const translated = await translator.translate(original);
-      el.innerHTML = '<span class="translated-badge">translated</span> ' + translated;
-      el.lang = 'en';
-      resolve();
-    });
-  });
-}
-
-/**
- * @param {Translator} translator
  * @param {LanguageDetector | null} detector
  */
-async function translateAll(translator, detector) {
-  /** @type {NodeListOf<HTMLElement>} */
-  const elements = document.querySelectorAll('[lang="de"], [data-uncertain-lang]');
-  for (const el of elements) {
-    if (el.hasAttribute('data-uncertain-lang')) {
-      const text = el.textContent?.trim();
-      if (!text || !detector) continue;
-      const results = await detector.detect(text);
-      const lang = results[0]?.detectedLanguage;
-      if (!lang) continue;
-      el.lang = lang;
-      el.removeAttribute('data-uncertain-lang');
-      if (lang !== 'de') continue;
-    }
-    await translateElement(el, translator);
+async function translateElement(el, translator, detector) {
+  const original = el.textContent;
+  if (!original?.trim()) return;
+
+  // Detect language for uncertain elements
+  if (el.hasAttribute('data-uncertain-lang')) {
+    if (!detector) return;
+    const results = await detector.detect(original);
+    const lang = results[0]?.detectedLanguage;
+    if (!lang) return;
+    el.lang = lang;
+    if (lang !== 'de') return;
+  }
+
+  const cached = translationCache.get(original);
+  if (!cached) {
+    el.insertAdjacentHTML('afterbegin', '<span class="translated-badge translating-badge">translating…</span> ');
+  }
+  const translated = cached ?? await translator.translate(original);
+  if (!cached) translationCache.set(original, translated);
+
+  if (el.hasAttribute('data-uncertain-lang')) {
+    // Title: show both translated and original
+    el.innerHTML = `<span class="translated-badge">translated</span> ${translated} <span class="original-text" lang="de">${original}</span>`;
+    el.lang = 'en';
+  } else {
+    // Synopsis: replace entirely
+    el.innerHTML = `<span class="translated-badge">translated</span> ${translated}`;
+    el.lang = 'en';
   }
 }
 
@@ -77,7 +80,7 @@ requestIdleCallback(async () => {
   const detectorAvailable = hasDetector && await LanguageDetector.availability() === 'available';
 
   /** @type {NodeListOf<HTMLElement>} */
-  const elements = document.querySelectorAll('[lang="de"], [data-uncertain-lang]');
+  const elements = document.querySelectorAll(TRANSLATE_SELECTOR);
   if (elements.length === 0) return;
 
   if (translatorAvailability === 'available') {
@@ -86,7 +89,33 @@ requestIdleCallback(async () => {
       targetLanguage: 'en',
     });
     const detector = detectorAvailable ? await LanguageDetector.create() : null;
-    await translateAll(translator, detector);
+
+    /** @type {Map<Element, number>} */
+    const pending = new Map();
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          const timer = setTimeout(() => {
+            pending.delete(entry.target);
+            observer.unobserve(entry.target);
+            requestIdleCallback(() => {
+              translateElement(/** @type {HTMLElement} */ (entry.target), translator, detector);
+            });
+          }, 200);
+          pending.set(entry.target, timer);
+        } else {
+          const timer = pending.get(entry.target);
+          if (timer != null) {
+            clearTimeout(timer);
+            pending.delete(entry.target);
+          }
+        }
+      }
+    }, { rootMargin: '100%' });
+
+    for (const el of elements) {
+      observer.observe(el);
+    }
     return;
   }
 
@@ -104,7 +133,11 @@ requestIdleCallback(async () => {
         targetLanguage: 'en',
       });
       const detector = detectorAvailable ? await LanguageDetector.create() : null;
-      await translateAll(translator, detector);
+      /** @type {NodeListOf<HTMLElement>} */
+      const allElements = document.querySelectorAll(TRANSLATE_SELECTOR);
+      for (const el of allElements) {
+        await translateElement(el, translator, detector);
+      }
       for (const b of document.querySelectorAll('.translate-btn')) {
         b.remove();
       }

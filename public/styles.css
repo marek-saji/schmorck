@@ -353,8 +353,13 @@ a.screening:hover {
   text-box: trim-both cap alphabetic;
 }
 
+.original-text {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
 .translate-btn {
-  margin-top: var(--spacing-xs);
+  margin-bottom: var(--spacing-lg);
   padding: var(--spacing-xs) var(--spacing-sm);
   border: var(--thickness-border) solid var(--color-border);
   border-radius: var(--radius-sm);
