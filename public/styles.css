@@ -51,6 +51,8 @@
   --spacing-md: 1rem;
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
+  --spacing-xxl: 4rem;
+  --spacing-xxxl: 7rem;
 
   --thickness-border: 1px;
   --thickness-highlight: 3px;
@@ -176,6 +178,10 @@ footer {
 }
 
 /* ── Date Group ── */
+.date-group + .date-group {
+  margin-top: var(--spacing-xxxl);
+}
+
 .date-heading {
   position: sticky;
   top: 0;
