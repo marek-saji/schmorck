@@ -28,7 +28,13 @@ updateRelativeTimes();
 const TRANSLATE_SELECTOR = '[lang="de"]:not(.original-text), [data-uncertain-lang]:not([lang])';
 
 /** @type {Map<string, string>} */
-const translationCache = new Map();
+const translationCache = new Map(
+  Object.entries(JSON.parse(localStorage.getItem('translationCache') ?? '{}'))
+);
+
+function saveTranslationCache() {
+  localStorage.setItem('translationCache', JSON.stringify(Object.fromEntries(translationCache)));
+}
 
 /**
  * @param {HTMLElement} el
@@ -54,7 +60,10 @@ async function translateElement(el, translator, detector) {
     el.insertAdjacentHTML('afterbegin', '<span class="translated-badge translating-badge">translating…</span> ');
   }
   const translated = cached ?? await translator.translate(original);
-  if (!cached) translationCache.set(original, translated);
+  if (!cached) {
+    translationCache.set(original, translated);
+    saveTranslationCache();
+  }
 
   if (el.hasAttribute('data-uncertain-lang')) {
     // Title: show both translated and original

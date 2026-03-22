@@ -1,6 +1,5 @@
 # TODO
 
-- [ ] cache translations in localStorage
 - [ ] Credits: Combine Director and Writer, if same
 - [ ] Credits: Show Director and Writer on /film/:slug
 - [ ] z-index on sticky elements only when they are stuck (for browsers that support it)
