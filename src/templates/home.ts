@@ -92,7 +92,7 @@ function filmCard(
       <h2 style="view-transition-name: title-${escapeHtml(film.id)}-${isoDate}">${escapeHtml(film.title)}</h2>
     </a>
     ${meta ? `<p class="film-meta">${meta}</p>` : ''}
-    ${film.synopsis ? `<p class="film-synopsis-short">${escapeHtml(film.synopsis)}</p>` : ''}
+    ${film.synopsis ? `<p class="film-synopsis-short" lang="de">${escapeHtml(film.synopsis)}</p>` : ''}
     <div class="film-screenings">
       ${screeningItems}
     </div>

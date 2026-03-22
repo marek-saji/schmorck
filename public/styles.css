@@ -335,6 +335,37 @@ a.screening:hover {
   line-height: var(--line-height-base);
 }
 
+.translated-badge {
+  display: inline-block;
+  padding: 0.1em 0.4em;
+  border-radius: var(--radius-sm);
+  border: var(--thickness-border) solid var(--color-border);
+  color: var(--color-text);
+  font-size: 0.75em;
+  vertical-align: middle;
+  letter-spacing: 0.03em;
+}
+
+.translate-btn {
+  margin-top: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--thickness-border) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.translate-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-accent);
+}
+
+.translate-btn:disabled {
+  cursor: wait;
+}
+
 .film-links {
   display: flex;
   gap: var(--spacing-md);

@@ -70,7 +70,7 @@ function filmPage({ film, screenings, cinemas, fetchedAt, date }: FilmPageOption
   <div class="film-detail-info">
     ${meta ? `<p class="film-meta">${escapeHtml(meta)}</p>` : ''}
     ${credits}
-    ${film.synopsis ? `<div class="film-synopsis">${escapeHtml(film.synopsis)}</div>` : ''}
+    ${film.synopsis ? `<div class="film-synopsis" lang="de">${escapeHtml(film.synopsis)}</div>` : ''}
     <nav class="film-links">
       <a href="https://www.yorck.de/de/films/${escapeHtml(film.slug)}"><img src="/yorck.svg" alt="View on Yorck.de" class="film-link-icon"></a>
       <a href="https://letterboxd.com/search/${encodeURIComponent(film.title)}/"><img src="/letterboxd.svg" alt="Search on Letterboxd" class="film-link-icon"></a>

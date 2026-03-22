@@ -23,6 +23,72 @@ function updateRelativeTimes() {
 
 updateRelativeTimes();
 
+// ── Translate German synopses via Chrome Translator API ──
+
+/**
+ * @param {HTMLElement} el
+ * @param {Translator} translator
+ */
+async function translateElement(el, translator) {
+  const original = el.textContent;
+  if (!original?.trim()) return;
+  return new Promise(resolve => {
+    requestIdleCallback(async () => {
+      const translated = await translator.translate(original);
+      el.innerHTML = '<span class="translated-badge">translated</span> ' + translated;
+      el.lang = 'en';
+      resolve()
+    })
+  })
+}
+
+requestIdleCallback(async () => {
+  if (!('Translator' in globalThis)) return;
+
+  const availability = await Translator.availability({
+    sourceLanguage: 'de',
+    targetLanguage: 'en',
+  });
+  if (availability === 'unavailable') return;
+
+  /** @type {NodeListOf<HTMLElement>} */
+  const elements = document.querySelectorAll('[lang="de"]');
+  if (elements.length === 0) return;
+
+  if (availability === 'available') {
+    const translator = await Translator.create({
+      sourceLanguage: 'de',
+      targetLanguage: 'en',
+    });
+    for (const el of elements) {
+      await translateElement(el, translator);
+    }
+    return;
+  }
+
+  // downloadable or downloading — show button
+  for (const el of elements) {
+    const btn = document.createElement('button');
+    btn.textContent = 'Translate';
+    btn.className = 'translate-btn';
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      btn.textContent = 'Translating…';
+      const translator = await Translator.create({
+        sourceLanguage: 'de',
+        targetLanguage: 'en',
+      });
+      for (const el of elements) {
+        await translateElement(el, translator);
+      }
+      for (const b of document.querySelectorAll('.translate-btn')) {
+        b.remove();
+      }
+    }, { once: true });
+    el.after(btn);
+  }
+});
+
 requestIdleCallback(() => {
   /** @type {HTMLElement | null} */
   const banner = document.getElementById('banner');
