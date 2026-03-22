@@ -195,10 +195,18 @@ footer {
   position: sticky;
   top: 0;
   z-index: 2;
+  container-type: scroll-state;
   padding: var(--spacing-sm) var(--spacing-md);
   margin: 0 calc(-1 * var(--spacing-lg));
   background: var(--color-bg);
   font-size: var(--font-size-xxl);
+
+  @container not scroll-state(stuck: top) {
+    z-index: auto;
+  }
+  @container scroll-state(stuck: top) {
+    z-index: 2;
+  }
 }
 
 /* ── Film Card ── */
@@ -242,11 +250,19 @@ footer {
   position: sticky;
   top: calc(var(--font-size-xxl) + 2 * var(--spacing-sm));
   z-index: 1;
+  container-type: scroll-state;
   display: block;
   padding: var(--spacing-md) 0 var(--spacing-sm);
   margin-bottom: calc(var(--spacing-md) - var(--spacing-sm));
   background: var(--color-surface);
   color: inherit;
+
+  @container not scroll-state(stuck: top) {
+    z-index: auto;
+  }
+  @container scroll-state(stuck: top) {
+    z-index: 1;
+  }
 }
 
 .film-title-link h2 {
@@ -342,11 +358,19 @@ a.screening:hover {
   position: sticky;
   top: 0;
   z-index: 1;
+  container-type: scroll-state;
   padding: var(--spacing-md) 0 var(--spacing-sm);
   margin: 0 0 calc(var(--spacing-md) - var(--spacing-sm));
   background: var(--color-bg);
   font-size: var(--font-size-xxl);
   text-box: trim-both cap alphabetic;
+
+  @container not scroll-state(stuck: top) {
+    z-index: auto;
+  }
+  @container scroll-state(stuck: top) {
+    z-index: 1;
+  }
 }
 
 .film-synopsis {
