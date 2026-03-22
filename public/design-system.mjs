@@ -26,17 +26,37 @@ function renderSwatches(container, prefix) {
   }
 }
 
+/** @param {HTMLElement} container @param {string} name @param {string} label */
+function renderEmptySwatch(container, label) {
+  const clone = template.content.cloneNode(true);
+  clone.querySelector('.swatch').style.opacity = '0.3';
+  clone.querySelector('.swatch-color').style.background = 'repeating-linear-gradient(45deg, transparent, transparent 0.5em, var(--color-border) 0.5em, var(--color-border) 1em)';
+  clone.querySelector('.swatch-name').textContent = label;
+  container.appendChild(clone);
+}
+
 /** @param {HTMLElement} container @param {string} prefix */
 function renderGroupedSwatches(container, prefix) {
   const vars = allProps.filter(prop => prop.startsWith(prefix));
+
+  // Collect groups and all unique values (numeric suffixes)
+  /** @type {Map<string, Map<string, string>>} group → (value → varName) */
   const groups = new Map();
+  /** @type {Set<string>} */
+  const allValues = new Set();
+
   for (const name of vars) {
     const rest = name.slice(prefix.length);
     const group = rest.replace(/-?\d+$/, '') || rest;
-    if (!groups.has(group)) groups.set(group, []);
-    groups.get(group).push(name);
+    const value = rest.replace(/^.*-(?=\d)/, '');
+    if (!groups.has(group)) groups.set(group, new Map());
+    groups.get(group).set(value, name);
+    allValues.add(value);
   }
-  for (const [group, names] of groups) {
+
+  const sortedValues = [...allValues].sort((a, b) => Number(a) - Number(b));
+
+  for (const [group, valueMap] of groups) {
     const section = document.createElement('div');
     section.className = 'swatch-group';
     const heading = document.createElement('h3');
@@ -46,10 +66,13 @@ function renderGroupedSwatches(container, prefix) {
     section.appendChild(heading);
     const grid = document.createElement('div');
     grid.className = 'swatch-grid';
-    for (const name of names) {
-      const rest = name.slice(prefix.length);
-      const label = rest.replace(/^.*-(?=\d)/, '');
-      renderSwatch(grid, name, label);
+    for (const value of sortedValues) {
+      const varName = valueMap.get(value);
+      if (varName) {
+        renderSwatch(grid, varName, value);
+      } else {
+        renderEmptySwatch(grid, value);
+      }
     }
     section.appendChild(grid);
     container.appendChild(section);
