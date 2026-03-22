@@ -82,7 +82,7 @@ function filmCard(
     return `<a href="${href}" class="screening"><strong class="screening-time">${time}</strong>${attrs ? `<span class="screening-attrs">${attrs}</span>` : ''}${cinema ? `<span class="screening-cinema">${escapeHtml(cinema.name)}</span>` : ''}</a>`;
   }).join('\n');
 
-  return `<article class="film-card">
+  return `<article class="film-card"${film.traktId ? ` data-trakt-id="${film.traktId}"` : ''}>
   <a href="/films/${escapeHtml(film.slug)}?date=${isoDate}" class="film-poster-link">
     ${poster}
   </a>

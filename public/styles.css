@@ -131,6 +131,9 @@ h1, h2, h3 {
 
 /* ── Layout ── */
 header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: var(--spacing-md) var(--spacing-lg);
   border-bottom: var(--thickness-border) solid var(--color-border);
 }
@@ -449,3 +452,63 @@ a.screening:hover {
     margin: 0 auto;
   }
 }
+
+/* ── Trakt Auth ── */
+#trakt-user {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.trakt-avatar {
+  width: 1.5em;
+  height: 1.5em;
+  border-radius: 50%;
+}
+
+.trakt-username {
+  color: var(--color-text-muted);
+}
+
+.trakt-logout {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+}
+
+.trakt-signin-icon {
+  height: 1.5em;
+  width: auto;
+}
+
+/* ── Watchlist Button ── */
+.watchlist-btn {
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: color var(--transition-fast);
+}
+
+.watchlist-btn svg {
+  width: 1.5em;
+  height: 1.5em;
+  filter: drop-shadow(0 0 0.15em var(--color-bg));
+}
+
+.watchlist-btn-active {
+  color: var(--color-accent);
+}
+
+.watchlist-btn:hover {
+  color: var(--color-accent);
+}
+
+/* ── Film Card Sorting ── */
+.film-card[data-watchlist="true"] { order: 1; }
+.film-card[data-watched="true"] { order: 2; }
+.film-card[data-ignore="true"] { order: 3; }

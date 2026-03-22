@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
 import { readFile } from 'node:fs/promises';
 import { join, extname } from 'node:path';
-import { YORCK_VISTA_API_URL, PORT, APP_URL, NODE_ENV, COMMIT_SHA } from './lib/env.ts';
+import { YORCK_VISTA_API_URL, PORT, APP_URL, TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET, NODE_ENV, COMMIT_SHA } from './lib/env.ts';
 import { Cache } from './cache.ts';
 import { fetchSchedule } from './yorck-client.ts';
 import { homePage } from './templates/home.ts';
@@ -174,6 +174,60 @@ const server = createServer(async (req, res) => {
     if (url.pathname === '/design-system') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(designSystemPage());
+      return;
+    }
+
+    // Trakt OAuth callback — exchange code for tokens, set cookie, redirect
+    if (url.pathname === '/auth/trakt/callback') {
+      const code = url.searchParams.get('code');
+      if (!code) {
+        res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end('<html><body><h1>Missing authorization code</h1></body></html>');
+        return;
+      }
+      try {
+        const tokenRes = await fetch('https://api.trakt.tv/oauth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code,
+            client_id: TRAKT_CLIENT_ID,
+            client_secret: TRAKT_CLIENT_SECRET,
+            redirect_uri: `${APP_URL}/auth/trakt/callback`,
+            grant_type: 'authorization_code',
+          }),
+        });
+        if (!tokenRes.ok) {
+          throw new Error(`Token exchange failed: ${tokenRes.status}`);
+        }
+        const tokens = await tokenRes.json() as { access_token: string; refresh_token: string; expires_in: number };
+        const maxAge = tokens.expires_in;
+        res.writeHead(302, {
+          'Location': '/',
+          'Set-Cookie': [
+            `trakt_access_token=${tokens.access_token}; Path=/; Max-Age=${maxAge}; SameSite=Strict`,
+            `trakt_refresh_token=${tokens.refresh_token}; Path=/; HttpOnly; Max-Age=${maxAge * 4}; SameSite=Strict`,
+          ],
+        });
+        res.end();
+      } catch (err) {
+        console.error('Trakt OAuth error:', err);
+        res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end('<html><body><h1>Sign in failed</h1></body></html>');
+      }
+      return;
+    }
+
+    // Trakt logout — clear cookies, redirect
+    if (url.pathname === '/auth/trakt/logout') {
+      res.writeHead(302, {
+        'Location': '/',
+        'Set-Cookie': [
+          'trakt_access_token=; Path=/; Max-Age=0',
+          'trakt_refresh_token=; Path=/; Max-Age=0',
+        ],
+      });
+      res.end();
       return;
     }
 
