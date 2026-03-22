@@ -1,6 +1,5 @@
 import { layout } from './layout.ts';
 import { escapeHtml } from '../lib/html.ts';
-import { NODE_ENV } from '../lib/env.ts';
 import type { ScheduleData, Film, Screening, Cinema } from '../types.ts';
 
 interface HomeOptions {
@@ -96,7 +95,6 @@ function filmCard(
     <div class="film-screenings">
       ${screeningItems}
     </div>
-    ${NODE_ENV === 'development' ? `<details><summary>Raw data</summary><pre>${escapeHtml(JSON.stringify(film, null, 2))}</pre></details>` : ''}
   </div>
 </article>`;
 }
