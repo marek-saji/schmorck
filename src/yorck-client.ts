@@ -78,6 +78,10 @@ function mapYorckFilm(f: YorckFilm): Film {
 }
 
 function mapFilm(f: VistaFilm | VistaScheduledFilm | YorckFilm): Film {
+  const title = 'Title' in f ? f.Title : f.title;
+  if (title.includes('Blues')) {
+    console.log(f)
+  }
   if ('Title' in f) return mapVistaFilm(f);
   return mapYorckFilm(f);
 }
@@ -173,6 +177,7 @@ async function fetchJson<T>(path: string): Promise<T> {
 
 async function fetchSchedule(): Promise<ScheduleData> {
   const API = 'yorck' as ('vista' | 'yorck')
+
   switch (API) {
     case 'vista': {
       const [cinemas, films, sessions] = await Promise.all([

@@ -75,6 +75,7 @@
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1);
 
   --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
 
   accent-color: var(--color-accent);
   scrollbar-gutter: stable both-edges;
@@ -218,6 +219,7 @@ footer {
   background: var(--color-surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
+  transition: opacity var(--transition-normal);
 }
 
 .film-poster-link {
@@ -538,7 +540,13 @@ a.screening:hover {
   color: var(--color-accent);
 }
 
-/* ── Film Card Sorting ── */
-.film-card[data-watchlist="true"] { order: 1; }
-.film-card[data-watched="true"] { order: 2; }
-.film-card[data-ignore="true"] { order: 3; }
+.film-card {
+  /* ── Film Card Sorting ── */
+  &:where([data-watchlist="true"]) { order: 1; }
+  &:where([data-watched="true"]) { order: 2; }
+  &:where([data-ignore="true"]) { order: 3; }
+
+  &:where([data-ignore="true"]) { opacity: 0.3; }
+  &:where([data-watched="true"]:not([data-watchlist="true"])) { opacity: 0.5; }
+  &:where(:hover, :focus-within) { opacity: 1; }
+}
