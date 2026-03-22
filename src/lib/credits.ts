@@ -14,7 +14,7 @@ function formatCredits({ directors, writers, cast }: CreditOptions): string {
   const parts: Array<string> = [];
 
   if (directors?.length && writers?.length && arraysEqual(directors, writers)) {
-    const label = directors.length > 1 ? 'Directors & Writers' : 'Director & Writer';
+    const label = directors.length > 1 ? 'Writers & Directors' : 'Writer & Director';
     parts.push(`<p><strong>${label}:</strong> ${directors.map(escapeHtml).join(', ')}</p>`);
   } else {
     if (directors?.length) {
@@ -38,7 +38,7 @@ function formatCreditsMeta({ directors, writers }: CreditOptions): string {
   const parts: Array<string> = [];
 
   if (directors?.length && writers?.length && arraysEqual(directors, writers)) {
-    const label = directors.length > 1 ? 'Directors & Writers' : 'Director & Writer';
+    const label = directors.length > 1 ? 'Writers & Directors' : 'Writer & Director';
     parts.push(`${label}: ${directors.map(escapeHtml).join(', ')}`);
   } else {
     if (directors?.length) {
