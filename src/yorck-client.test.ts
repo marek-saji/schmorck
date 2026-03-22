@@ -28,7 +28,9 @@ describe('mapApiResponse', () => {
     const raw = {
       cinemas: [],
       films: [{
+        ID: 'sf-1',
         ScheduledFilmId: 'HO00004842',
+        CinemaId: '0000000001',
         Title: 'Anora',
         Synopsis: 'A young woman from Brooklyn...',
         RunTime: '139',
@@ -54,6 +56,7 @@ describe('mapApiResponse', () => {
       cinemas: [],
       films: [],
       sessions: [{
+        ID: 'sess-1',
         SessionId: 'sess-1',
         ScheduledFilmId: 'HO00004842',
         CinemaId: '0000000001',
@@ -61,7 +64,7 @@ describe('mapApiResponse', () => {
         ScreenName: 'Saal 1',
         ScreenNumber: 1,
         SeatsAvailable: 42,
-        SoldoutStatus: 0,
+        SoldoutStatus: 0 as const,
         SessionAttributesNames: ['OmU'],
       }],
     };

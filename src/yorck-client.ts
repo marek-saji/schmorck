@@ -1,50 +1,7 @@
 import type { Cinema, Film, Screening, ScheduleData } from './types.ts';
+import type { VistaCinema, VistaScheduledFilm, VistaSession, VistaODataResponse } from './types/api/vista.ts';
 import { YORCK_VISTA_API_URL, YORCK_VISTA_API_KEY } from './lib/env.ts';
 import { slugify } from './lib/slug.ts';
-
-interface VistaFilmPerson {
-  FirstName?: string;
-  LastName?: string;
-  PersonType?: string;
-}
-
-interface VistaCinema {
-  ID: string;
-  Name: string;
-  Address1?: string;
-  Address2?: string;
-  City?: string;
-  Latitude?: number;
-  Longitude?: number;
-}
-
-interface VistaScheduledFilm {
-  ScheduledFilmId: string;
-  Title: string;
-  Synopsis?: string;
-  RunTime?: string;
-  Cast?: VistaFilmPerson[];
-  Rating?: string;
-  OpeningDate?: string;
-  TrailerUrl?: string;
-  GraphicUrl?: string;
-}
-
-interface VistaSession {
-  SessionId: string;
-  ScheduledFilmId: string;
-  CinemaId: string;
-  Showtime: string;
-  ScreenName?: string;
-  ScreenNumber?: number;
-  SeatsAvailable?: number;
-  SoldoutStatus?: number;
-  SessionAttributesNames?: string[];
-}
-
-interface VistaODataResponse<T> {
-  value: T[];
-}
 
 interface RawApiData {
   cinemas: VistaCinema[];
