@@ -123,7 +123,12 @@ requestIdleCallback(async () => {
     }, { rootMargin: '100%' });
 
     for (const el of elements) {
-      observer.observe(el);
+      const text = el.textContent?.trim();
+      if (text && translationCache.has(text)) {
+        translateElement(/** @type {HTMLElement} */ (el), translator, detector);
+      } else {
+        observer.observe(el);
+      }
     }
     return;
   }
