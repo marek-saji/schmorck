@@ -78,10 +78,6 @@ function mapYorckFilm(f: YorckFilm): Film {
 }
 
 function mapFilm(f: VistaFilm | VistaScheduledFilm | YorckFilm): Film {
-  const title = 'Title' in f ? f.Title : f.title;
-  if (title.includes('Blues')) {
-    console.log(f)
-  }
   if ('Title' in f) return mapVistaFilm(f);
   return mapYorckFilm(f);
 }
