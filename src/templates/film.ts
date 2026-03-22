@@ -1,5 +1,6 @@
 import { layout } from './layout.ts';
 import { escapeHtml } from '../lib/html.ts';
+import { formatCredits } from '../lib/credits.ts';
 import type { Film, Screening, Cinema } from '../types.ts';
 
 interface FilmPageOptions {
@@ -21,9 +22,7 @@ function filmPage({ film, screenings, cinemas, fetchedAt, date }: FilmPageOption
     film.rating,
   ].filter(Boolean).join(' · ');
 
-  const credits = [
-    film.cast?.length ? `<p><strong>Cast:</strong> ${film.cast.map(escapeHtml).join(', ')}</p>` : '',
-  ].filter(Boolean).join('\n');
+  const credits = formatCredits(film);
 
   // Group screenings by date
   const now = new Date();

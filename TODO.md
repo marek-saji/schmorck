@@ -1,7 +1,5 @@
 # TODO
 
-- [ ] Credits: Combine Director and Writer, if same
-- [ ] Credits: Show Director and Writer on /film/:slug
 - [ ] z-index on sticky elements only when they are stuck (for browsers that support it)
 - [ ] Display info about specials (e.g. marathons, previews, events).
       Check `CinemaEvents` endpoint or session attributes for special

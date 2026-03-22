@@ -1,5 +1,6 @@
 import { layout } from './layout.ts';
 import { escapeHtml } from '../lib/html.ts';
+import { formatCreditsMeta } from '../lib/credits.ts';
 import type { ScheduleData, Film, Screening, Cinema } from '../types.ts';
 
 interface HomeOptions {
@@ -67,10 +68,10 @@ function filmCard(
 ): string {
   const poster = `<img src="${escapeHtml(film.posterUrl)}" alt="" class="film-poster" style="view-transition-name: poster-${escapeHtml(film.id)}-${isoDate}">`;
 
+  const creditsMeta = formatCreditsMeta(film);
   const meta = [
     film.runTime ? `${film.runTime} min` : null,
-    film.directors?.length ? `Director: ${film.directors.map(escapeHtml).join(', ')}` : null,
-    film.writers?.length ? `Writer: ${film.writers.map(escapeHtml).join(', ')}` : null,
+    creditsMeta || null,
   ].filter(Boolean).join(' · ');
 
   const screeningItems = screenings.map(s => {
