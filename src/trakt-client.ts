@@ -39,7 +39,8 @@ async function traktFetch<T>(path: string): Promise<T> {
   }
 
   if (!res.ok) {
-    throw new Error(`Trakt API error: ${res.status} ${res.statusText}`);
+    const cause = await res.text();
+    throw new Error(`Trakt API error: ${res.status} ${res.statusText}`, { cause });
   }
 
   return res.json() as Promise<T>;
