@@ -2,7 +2,12 @@ import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
 import { readFile } from 'node:fs/promises';
 import { join, extname } from 'node:path';
-import { YORCK_VISTA_API_URL, PORT, APP_URL, TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET, NODE_ENV, COMMIT_SHA } from './lib/env.ts';
+import { YORCK_VISTA_API_URL, APP_URL, TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET, NODE_ENV, COMMIT_SHA } from './lib/env.ts';
+
+const appUrl = new URL(APP_URL);
+const PORT = appUrl.port
+  ? Number(appUrl.port)
+  : appUrl.protocol === 'https:' ? 443 : 80;
 import { Cache } from './cache.ts';
 import { fetchSchedule } from './yorck-client.ts';
 import { homePage } from './templates/home.ts';
@@ -243,7 +248,10 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Listening on ${APP_URL}`);
+  const addr = server.address();
+  const actualPort = typeof addr === 'object' && addr ? addr.port : PORT;
+  const listenUrl = PORT === 0 ? APP_URL.replace(':0', `:${actualPort}`) : APP_URL;
+  console.log(`Listening on ${listenUrl}`);
   console.log(`Caching: ${CACHING_ENABLED ? `enabled (${COMMIT_SHA})` : 'disabled'}`);
 });
 
