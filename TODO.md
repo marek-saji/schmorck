@@ -1,6 +1,10 @@
 # TODO
 
-- fetch trakt watched data only for day in viewport 
+- trakt rate limit
+  - on server, half allowed
+  - store last fetched time and respect on start
+  - on client, half allowed 
+  - fetch watched data only for day in viewport 
 
 - show <details> with raw film data; when mapping, include
   `Film._trakt` and `Film._yorck` for debugging
