@@ -2,6 +2,14 @@
 
 const requestIdleCallback = globalThis.requestIdleCallback ?? ((cb) => setTimeout(cb, 3_000));
 
+if ('serviceWorker' in navigator) {
+  requestIdleCallback(() => {
+    navigator.serviceWorker.register('/service-worker.mjs').catch((err) => {
+      console.warn('Service worker registration failed.', err);
+    });
+  });
+}
+
 const rtf = new Intl.RelativeTimeFormat('en-150', { numeric: 'auto' });
 
 /** @param {Date} date */

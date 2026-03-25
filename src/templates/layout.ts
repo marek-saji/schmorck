@@ -18,7 +18,11 @@ function layout({ title, fetchedAt, body }: LayoutOptions): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)} — Yorck</title>
+  <meta name="theme-color" content="#111111">
   <link rel="stylesheet" href="/styles.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/images/icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/images/icons/icon.svg">
   <meta name="trakt" content='${escapeHtml(JSON.stringify({ clientId: TRAKT_CLIENT_ID, redirectUri: APP_URL + '/auth/trakt/callback' }))}'>
 </head>
 <body>
