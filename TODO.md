@@ -1,5 +1,7 @@
 # TODO
 
+- fetch trakt watched data only for day in viewport 
+
 - show <details> with raw film data; when mapping, include
   `Film._trakt` and `Film._yorck` for debugging
 - When fetching, trakt data, also fetch `GET /movies/:id?extended=full`
