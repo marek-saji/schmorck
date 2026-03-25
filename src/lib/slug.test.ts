@@ -12,8 +12,13 @@ describe('slugify', () => {
     assert.equal(slugify('Ärger mit Öl und Süße'), 'arger-mit-ol-und-susse');
   });
 
-  it('replaces special characters with dashes', () => {
-    assert.equal(slugify("L'Grazia — Part 2!"), 'l-grazia-part-2');
+  it('removes apostrophes and quotes', () => {
+    assert.equal(slugify(`L'Grazia "Part" 2`), 'lgrazia-part-2');
+    assert.equal(slugify('L’Grazia “Part” 2'), 'lgrazia-part-2');
+  });
+
+  it('replaces other special characters with dashes', () => {
+    assert.equal(slugify('L Grazia — Part 2!'), 'l-grazia-part-2');
   });
 
   it('trims leading and trailing dashes', () => {

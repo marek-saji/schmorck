@@ -1,6 +1,7 @@
 function slugify(str: string): string {
   return str
     .toLowerCase()
+    .replace(/['"`‘’“”]/g, '')
     .replace(/ß/g, 'ss')
     .replace(/&/g, 'and')
     .normalize('NFD')
