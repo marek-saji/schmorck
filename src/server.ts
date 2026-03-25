@@ -73,7 +73,10 @@ const server = createServer(async (req, res) => {
       try {
         const content = await readFile(filePath);
         const mime = MIME_TYPES[extname(filePath)] ?? 'application/octet-stream';
-        const headers: HeadersInit = { 'Content-Type': mime };
+        const headers: HeadersInit = {
+          'Content-Type': mime,
+          'Content-Length': String(content.byteLength),
+        };
         if (CACHING_ENABLED) {
           headers['ETag'] = `"${COMMIT_SHA}"`;
           headers['Cache-Control'] = `public, max-age=${STATIC_MAX_AGE_S}, immutable`;
