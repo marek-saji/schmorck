@@ -3,7 +3,8 @@ import type { Storage } from './lib/storage.ts';
 import type { TraktSearchResult, TraktMovie, TraktPeople } from './types/api/trakt.ts';
 import type { Film } from './types.ts';
 
-const TRAKT_API_BASE = 'https://api.trakt.tv';
+// temporarily avoid hitting trakt.tv API, because we got banned on ClaudFlare level
+const TRAKT_API_BASE = 'https://api.trakt.tv.test';
 
 const TRAKT_HEADERS: HeadersInit = {
   'Content-Type': 'application/json',
