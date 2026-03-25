@@ -1,4 +1,5 @@
 {
+  "$schema": "https://www.schemastore.org/web-manifest-combined.json",
   "name": "Yorck",
   "short_name": "Yorck",
   "description": "Alternative UI for Yorck cinema showtimes.",
