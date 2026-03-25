@@ -39,7 +39,7 @@ function showSignIn() {
     redirect_uri: meta.redirectUri,
     response_type: 'code',
   })}`;
-  userEl.innerHTML = `<a href="${authorizeUrl}" class="trakt-signin"><img src="/trakt.svg" alt="Sign in to Trakt.tv" class="trakt-signin-icon"></a>`;
+  userEl.innerHTML = `<a href="${authorizeUrl}" class="trakt-signin"><img src="/images/services/trakt.svg" alt="Sign in to Trakt.tv" class="trakt-signin-icon"></a>`;
 }
 
 // ── Watchlist & Watched ──
