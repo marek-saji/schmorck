@@ -2,7 +2,7 @@
 
 /**
  * @typedef {{
- *   task: () => any,
+ *   task: () => Promise<Response | void>,
  *   resolve: (value: any) => void,
  *   reject: (reason: unknown) => void,
  *   signal?: AbortSignal,
@@ -11,9 +11,17 @@
  */
 
 /**
- * @param {{ rateLimitReqPerMin: number }} options
+ * @param {{
+ *   rateLimitReqPerMin: number,
+ *   fallbackRetryMs?: number,
+ *   malformedHeaderBackoffMs?: number,
+ * }} options
  */
-function createApiShield({ rateLimitReqPerMin }) {
+function createApiShield({
+  rateLimitReqPerMin,
+  fallbackRetryMs = 60_000,
+  malformedHeaderBackoffMs = 1_000,
+}) {
   if (!(rateLimitReqPerMin > 0)) {
     throw new RangeError(`rateLimitReqPerMin must be positive, got ${rateLimitReqPerMin}`);
   }
@@ -33,6 +41,44 @@ function createApiShield({ rateLimitReqPerMin }) {
   /** @param {number} ms */
   function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Extract wait time from X-Ratelimit header.
+   * Returns ms to wait, or 0 if no backoff needed.
+   * @param {Response} response
+   * @returns {number}
+   */
+  function parseXRatelimitWait(response) {
+    const xRatelimit = response.headers.get('X-Ratelimit');
+    if (!xRatelimit) return 0;
+    try {
+      const parsed = JSON.parse(xRatelimit);
+      if (parsed.remaining === 0 && parsed.until) {
+        const backOffMs = new Date(parsed.until).getTime() - Date.now();
+        return Math.max(0, backOffMs);
+      }
+    } catch (cause) {
+      console.error(new Error('apiShield: malformed X-Ratelimit header', { cause }));
+      return malformedHeaderBackoffMs;
+    }
+    return 0;
+  }
+
+  /**
+   * Determine how long to wait before retrying a 429 response.
+   * @param {Response} response
+   * @returns {number}
+   */
+  function getRetryMs(response) {
+    const retryAfter = response.headers.get('Retry-After');
+    if (retryAfter) {
+      const seconds = Number(retryAfter);
+      if (seconds > 0) return seconds * 1_000;
+    }
+    const waitMs = parseXRatelimitWait(response);
+    if (waitMs > 0) return waitMs;
+    return fallbackRetryMs;
   }
 
   async function processQueue() {
@@ -78,7 +124,25 @@ function createApiShield({ rateLimitReqPerMin }) {
 
         lastRequestAt = Date.now();
         try {
-          const result = await entry.task();
+          let result = await entry.task();
+
+          // Auto-retry on rate limit
+          while (result instanceof Response && result.status === 429) {
+            const waitMs = getRetryMs(result);
+            console.warn(`apiShield: 429 received, retrying after ${waitMs}ms`);
+            await delay(waitMs);
+            lastRequestAt = Date.now();
+            result = await entry.task();
+          }
+
+          // Preemptive backoff: if remaining budget is exhausted, slow down future requests
+          if (result instanceof Response) {
+            const waitMs = parseXRatelimitWait(result);
+            if (waitMs > 0) {
+              backOff(waitMs);
+            }
+          }
+
           entry.resolve(result);
         } catch (err) {
           entry.reject(err);
@@ -90,8 +154,8 @@ function createApiShield({ rateLimitReqPerMin }) {
   }
 
   /**
-   * @template T
-   * @param {() => T | Promise<T>} task
+   * @template {Response | void} T
+   * @param {() => Promise<T>} task
    * @param {{ signal?: AbortSignal }} [options]
    * @returns {Promise<T>}
    */

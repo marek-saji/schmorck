@@ -8,7 +8,12 @@ export interface ApiShield {
 }
 
 export interface ApiShieldOptions {
+  /** Maximum requests per minute. Pass Infinity to only serialize without rate limiting. */
   rateLimitReqPerMin: number;
+  /** How long to wait on 429 when neither Retry-After nor X-Ratelimit.until provide a value. @default 60_000 */
+  fallbackRetryMs?: number;
+  /** How long to back off when X-Ratelimit header is present but contains unparseable JSON. @default 1_000 */
+  malformedHeaderBackoffMs?: number;
 }
 
 export function createApiShield(options: ApiShieldOptions): ApiShield;
