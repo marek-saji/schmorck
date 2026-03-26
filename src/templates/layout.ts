@@ -27,7 +27,15 @@ function layout({ title, fetchedAt, body }: LayoutOptions): string {
 </head>
 <body>
   <header>
-    <a href="/">Yorck</a>
+    <a href="/">
+      <img
+        alt=""
+        src="/images/icons/icon.svg"
+        width="32" height="32"
+        class="header-logo"
+      >
+      Yorck
+    </a>
     <div id="trakt-user"></div>
   </header>
   <div id="banner" class="banner"${fetchedAt ? '' : ' hidden'} data-severity=warning>

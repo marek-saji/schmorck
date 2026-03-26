@@ -137,10 +137,17 @@ h1, h2, h3 {
 /* ── Layout ── */
 header {
   display: flex;
+  gap: var(--spacing-sm) var(--spacing-md);
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-md) var(--spacing-lg);
   border-bottom: var(--thickness-border) solid var(--color-border);
+
+  & > * {
+    flex-shrink: 0;
+    max-inline-size: 100%;
+  }
 }
 
 header a {
@@ -186,6 +193,13 @@ footer {
 
 .banner[hidden] {
   display: none;
+}
+
+/* ── Header ── */
+.header-logo {
+  display: inline-block;
+  inline-size: 1.5em;
+  vertical-align: middle;
 }
 
 /* ── Date Group ── */
@@ -497,7 +511,6 @@ a.screening:hover {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-size: var(--font-size-sm);
 }
 
 .trakt-avatar {
@@ -515,7 +528,13 @@ a.screening:hover {
   font-weight: var(--font-weight-normal);
 }
 
+.trakt-signin {
+  font-size: var(--font-size-sm);
+}
+
 .trakt-signin-icon {
+  display: inline-block;
+  vertical-align: middle;
   height: 1.5em;
   width: auto;
 }
