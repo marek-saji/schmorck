@@ -1,5 +1,4 @@
 export interface ApiShield {
-  queue(task: () => Promise<Response>, options?: { signal?: AbortSignal }): Promise<Response>;
   pause(): void;
   resume(): void;
   fetch(url: string | URL | Request, options?: RequestInit): Promise<Response>;

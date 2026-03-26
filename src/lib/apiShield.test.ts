@@ -7,13 +7,24 @@ function flush() {
   return new Promise(resolve => setImmediate(resolve));
 }
 
-const ok = async () => new Response();
+const URL_A = 'http://test/a';
+const URL_B = 'http://test/b';
+const URL_C = 'http://test/c';
 
 describe('apiShield', () => {
-  // Silence console output from apiShield internals
   const noop = () => {};
   mock.method(console, 'warn', noop);
   mock.method(console, 'error', noop);
+
+  const originalFetch = globalThis.fetch;
+
+  function mockFetch(impl: (...args: Array<unknown>) => Promise<Response>) {
+    globalThis.fetch = mock.fn(impl) as typeof fetch;
+  }
+
+  function restoreFetch() {
+    globalThis.fetch = originalFetch;
+  }
 
   describe('createApiShield', () => {
     it('throws on invalid rateLimitReqPerMin', () => {
@@ -27,104 +38,161 @@ describe('apiShield', () => {
     });
   });
 
-  describe('queue', () => {
-    it('returns the task result', async () => {
+  describe('fetch', () => {
+    it('returns the fetch response', async () => {
       const shield = createApiShield({ rateLimitReqPerMin: Infinity });
-      const response = new Response('test');
-      const result = await shield.queue(() => Promise.resolve(response));
-      assert.equal(result, response);
+      const expected = new Response('test');
+      mockFetch(async () => expected);
+      try {
+        const result = await shield.fetch(URL_A);
+        assert.equal(result, expected);
+      } finally {
+        restoreFetch();
+      }
     });
 
-    it('executes tasks in FIFO order', async () => {
+    it('passes url and options to global fetch', async () => {
+      const shield = createApiShield({ rateLimitReqPerMin: Infinity });
+      mockFetch(async () => new Response());
+      try {
+        await shield.fetch(URL_A, { method: 'POST', headers: { 'X-Test': '1' } });
+        const fetchMock = globalThis.fetch as unknown as ReturnType<typeof mock.fn>;
+        assert.equal(fetchMock.mock.callCount(), 1);
+        const args = fetchMock.mock.calls[0].arguments as unknown as [string, RequestInit];
+        assert.equal(args[0], URL_A);
+        assert.equal(args[1].method, 'POST');
+      } finally {
+        restoreFetch();
+      }
+    });
+
+    it('executes requests in FIFO order', async () => {
       const shield = createApiShield({ rateLimitReqPerMin: Infinity });
       const order: Array<number> = [];
-      await Promise.all([
-        shield.queue(() => { order.push(1); return ok(); }),
-        shield.queue(() => { order.push(2); return ok(); }),
-        shield.queue(() => { order.push(3); return ok(); }),
-      ]);
-      assert.deepEqual(order, [1, 2, 3]);
+      mockFetch(async (...args: Array<unknown>) => {
+        const url = String(args[0]);
+        if (url.endsWith('/a')) order.push(1);
+        if (url.endsWith('/b')) order.push(2);
+        if (url.endsWith('/c')) order.push(3);
+        return new Response();
+      });
+      try {
+        await Promise.all([
+          shield.fetch(URL_A),
+          shield.fetch(URL_B),
+          shield.fetch(URL_C),
+        ]);
+        assert.deepEqual(order, [1, 2, 3]);
+      } finally {
+        restoreFetch();
+      }
     });
 
-    it('runs only one task at a time', async () => {
+    it('runs only one request at a time', async () => {
       const shield = createApiShield({ rateLimitReqPerMin: Infinity });
       let concurrent = 0;
       let maxConcurrent = 0;
 
-      const task = async () => {
+      mockFetch(async () => {
         concurrent++;
         maxConcurrent = Math.max(maxConcurrent, concurrent);
         await flush();
         concurrent--;
         return new Response();
-      };
-
-      await Promise.all([
-        shield.queue(task),
-        shield.queue(task),
-        shield.queue(task),
-      ]);
-      assert.equal(maxConcurrent, 1);
+      });
+      try {
+        await Promise.all([
+          shield.fetch(URL_A),
+          shield.fetch(URL_B),
+          shield.fetch(URL_C),
+        ]);
+        assert.equal(maxConcurrent, 1);
+      } finally {
+        restoreFetch();
+      }
     });
   });
 
   describe('rate limiting', () => {
     it('enforces minimum interval between requests', async (t) => {
-      // Start at non-zero time so first task doesn't wait (lastRequestAt=0, elapsed is large)
       t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 100_000 });
 
       const shield = createApiShield({ rateLimitReqPerMin: 60 }); // 1 per second
       const timestamps: Array<number> = [];
 
-      const p1 = shield.queue(() => { timestamps.push(Date.now()); return ok(); });
-      const p2 = shield.queue(() => { timestamps.push(Date.now()); return ok(); });
-      const p3 = shield.queue(() => { timestamps.push(Date.now()); return ok(); });
+      mockFetch(async () => {
+        timestamps.push(Date.now());
+        return new Response();
+      });
+      try {
+        const p1 = shield.fetch(URL_A);
+        const p2 = shield.fetch(URL_B);
+        const p3 = shield.fetch(URL_C);
 
-      // First task runs immediately (elapsed since epoch >> 1000ms)
-      await flush();
-      assert.equal(timestamps.length, 1);
+        // First request runs immediately (elapsed since epoch >> 1000ms)
+        await flush();
+        assert.equal(timestamps.length, 1);
 
-      // Second task needs 1000ms wait
-      t.mock.timers.tick(1_000);
-      await flush();
-      assert.equal(timestamps.length, 2);
+        // Second request needs 1000ms wait
+        t.mock.timers.tick(1_000);
+        await flush();
+        assert.equal(timestamps.length, 2);
 
-      // Third task needs another 1000ms
-      t.mock.timers.tick(1_000);
-      await flush();
+        // Third request needs another 1000ms
+        t.mock.timers.tick(1_000);
+        await flush();
 
-      await Promise.all([p1, p2, p3]);
-      assert.equal(timestamps.length, 3);
+        await Promise.all([p1, p2, p3]);
+        assert.equal(timestamps.length, 3);
 
-      assert.equal(timestamps[1] - timestamps[0], 1_000);
-      assert.equal(timestamps[2] - timestamps[1], 1_000);
+        assert.equal(timestamps[1] - timestamps[0], 1_000);
+        assert.equal(timestamps[2] - timestamps[1], 1_000);
+      } finally {
+        restoreFetch();
+      }
     });
 
     it('skips delay with Infinity rate', async () => {
       const shield = createApiShield({ rateLimitReqPerMin: Infinity });
-      const start = Date.now();
-      await shield.queue(() => ok());
-      await shield.queue(() => ok());
-      await shield.queue(() => ok());
-      const elapsed = Date.now() - start;
-      assert.ok(elapsed < 50, `Expected < 50ms, got ${elapsed}ms`);
+      mockFetch(async () => new Response());
+      try {
+        const start = Date.now();
+        await shield.fetch(URL_A);
+        await shield.fetch(URL_B);
+        await shield.fetch(URL_C);
+        const elapsed = Date.now() - start;
+        assert.ok(elapsed < 50, `Expected < 50ms, got ${elapsed}ms`);
+      } finally {
+        restoreFetch();
+      }
     });
   });
 
   describe('error isolation', () => {
-    it('rejects only the failing task', async () => {
+    it('rejects only the failing request', async () => {
       const shield = createApiShield({ rateLimitReqPerMin: Infinity });
       const results: Array<string> = [];
+      let callCount = 0;
 
-      const p1 = shield.queue(() => { results.push('first'); return ok(); });
-      const p2 = shield.queue(() => { throw new Error('boom'); });
-      const p3 = shield.queue(() => { results.push('third'); return ok(); });
+      mockFetch(async () => {
+        callCount++;
+        if (callCount === 2) throw new Error('boom');
+        results.push(`call-${callCount}`);
+        return new Response();
+      });
+      try {
+        const p1 = shield.fetch(URL_A);
+        const p2 = shield.fetch(URL_B);
+        const p3 = shield.fetch(URL_C);
 
-      await p1;
-      await assert.rejects(p2, { message: 'boom' });
-      await p3;
+        await p1;
+        await assert.rejects(p2, { message: 'boom' });
+        await p3;
 
-      assert.deepEqual(results, ['first', 'third']);
+        assert.deepEqual(results, ['call-1', 'call-3']);
+      } finally {
+        restoreFetch();
+      }
     });
   });
 
@@ -135,21 +203,29 @@ describe('apiShield', () => {
       const shield = createApiShield({ rateLimitReqPerMin: Infinity });
       const order: Array<string> = [];
 
-      shield.pause();
+      mockFetch(async (...args: Array<unknown>) => {
+        order.push(String(args[0]));
+        return new Response();
+      });
+      try {
+        shield.pause();
 
-      const p1 = shield.queue(() => { order.push('a'); return ok(); });
-      const p2 = shield.queue(() => { order.push('b'); return ok(); });
+        const p1 = shield.fetch(URL_A);
+        const p2 = shield.fetch(URL_B);
 
-      t.mock.timers.tick(100);
-      await flush();
-      assert.deepEqual(order, [], 'nothing runs while paused');
+        t.mock.timers.tick(100);
+        await flush();
+        assert.deepEqual(order, [], 'nothing runs while paused');
 
-      shield.resume();
-      t.mock.timers.tick(0);
-      await flush();
-      await Promise.all([p1, p2]);
+        shield.resume();
+        t.mock.timers.tick(0);
+        await flush();
+        await Promise.all([p1, p2]);
 
-      assert.deepEqual(order, ['a', 'b']);
+        assert.deepEqual(order, [URL_A, URL_B]);
+      } finally {
+        restoreFetch();
+      }
     });
 
     it('is idempotent', () => {
@@ -162,27 +238,35 @@ describe('apiShield', () => {
   });
 
   describe('backOff', () => {
-    it('inserts delay before pending tasks', async (t) => {
+    it('inserts delay before pending requests', async (t) => {
       t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
 
       const shield = createApiShield({ rateLimitReqPerMin: Infinity });
       const order: Array<string> = [];
 
-      shield.pause();
-      const p1 = shield.queue(() => { order.push('task'); return ok(); });
-      shield.backOff(2_000);
-      shield.resume();
+      mockFetch(async () => {
+        order.push('fetched');
+        return new Response();
+      });
+      try {
+        shield.pause();
+        const p1 = shield.fetch(URL_A);
+        shield.backOff(2_000);
+        shield.resume();
 
-      // After 0ms: backOff delay starts (it was unshifted to front)
-      t.mock.timers.tick(0);
-      await flush();
-      assert.deepEqual(order, []);
+        // After 0ms: backOff delay starts (it was unshifted to front)
+        t.mock.timers.tick(0);
+        await flush();
+        assert.deepEqual(order, []);
 
-      // After 2000ms: backOff delay completes, task runs
-      t.mock.timers.tick(2_000);
-      await flush();
-      await p1;
-      assert.deepEqual(order, ['task']);
+        // After 2000ms: backOff delay completes, request runs
+        t.mock.timers.tick(2_000);
+        await flush();
+        await p1;
+        assert.deepEqual(order, ['fetched']);
+      } finally {
+        restoreFetch();
+      }
     });
   });
 
@@ -192,43 +276,56 @@ describe('apiShield', () => {
       const controller = new AbortController();
       controller.abort('cancelled');
 
-      await assert.rejects(
-        shield.queue(() => ok(), { signal: controller.signal }),
-        (err) => err === 'cancelled',
-      );
+      mockFetch(async () => new Response());
+      try {
+        await assert.rejects(
+          shield.fetch(URL_A, { signal: controller.signal }),
+          (err) => err === 'cancelled',
+        );
+      } finally {
+        restoreFetch();
+      }
     });
 
-    it('removes task from queue when aborted', async (t) => {
+    it('removes request from queue when aborted', async (t) => {
       t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
 
       const shield = createApiShield({ rateLimitReqPerMin: Infinity });
       const order: Array<string> = [];
 
-      shield.pause();
-      const p1 = shield.queue(() => { order.push('first'); return ok(); });
+      mockFetch(async (...args: Array<unknown>) => {
+        order.push(String(args[0]));
+        return new Response();
+      });
+      try {
+        shield.pause();
+        const p1 = shield.fetch(URL_A);
 
-      const controller = new AbortController();
-      const p2 = shield.queue(() => { order.push('second'); return ok(); }, { signal: controller.signal });
+        const controller = new AbortController();
+        const p2 = shield.fetch(URL_B, { signal: controller.signal });
 
-      const p3 = shield.queue(() => { order.push('third'); return ok(); });
+        const p3 = shield.fetch(URL_C);
 
-      // Abort the second task while it's still queued
-      controller.abort(new DOMException('Aborted', 'AbortError'));
+        // Abort the second request while it's still queued
+        controller.abort(new DOMException('Aborted', 'AbortError'));
 
-      assert.equal(shield.queueLength, 2, 'aborted task removed from queue');
+        assert.equal(shield.queueLength, 2, 'aborted request removed from queue');
 
-      // Handle the rejection so it doesn't leak
-      p2.catch(() => {});
+        // Handle the rejection so it doesn't leak
+        p2.catch(() => {});
 
-      shield.resume();
-      t.mock.timers.tick(0);
-      await flush();
+        shield.resume();
+        t.mock.timers.tick(0);
+        await flush();
 
-      await p1;
-      await assert.rejects(p2, { name: 'AbortError' });
-      await p3;
+        await p1;
+        await assert.rejects(p2, { name: 'AbortError' });
+        await p3;
 
-      assert.deepEqual(order, ['first', 'third']);
+        assert.deepEqual(order, [URL_A, URL_C]);
+      } finally {
+        restoreFetch();
+      }
     });
   });
 
@@ -236,35 +333,36 @@ describe('apiShield', () => {
     it('retries on 429 with Retry-After and returns the successful response', async (t) => {
       t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 100_000 });
 
-      const warnMock = console.warn as ReturnType<typeof mock.fn>;
+      const warnMock = console.warn as unknown as ReturnType<typeof mock.fn>;
       const warnsBefore = warnMock.mock.callCount();
 
       const shield = createApiShield({ rateLimitReqPerMin: Infinity });
       let callCount = 0;
 
-      const task = async () => {
+      mockFetch(async () => {
         callCount++;
         if (callCount === 1) {
           return new Response('', { status: 429, headers: { 'Retry-After': '5' } });
         }
         return new Response('success', { status: 200 });
-      };
+      });
+      try {
+        const p = shield.fetch(URL_A);
 
-      const p = shield.queue(task);
+        await flush();
+        assert.equal(callCount, 1);
+        assert.equal(warnMock.mock.callCount() - warnsBefore, 1);
+        assert.match(String(warnMock.mock.calls[warnsBefore].arguments[0]), /429.*5000/);
 
-      // First call happens immediately
-      await flush();
-      assert.equal(callCount, 1);
-      assert.equal(warnMock.mock.callCount() - warnsBefore, 1);
-      assert.match(String(warnMock.mock.calls[warnsBefore].arguments[0]), /429.*5000/);
+        t.mock.timers.tick(5_000);
+        await flush();
 
-      // Wait for Retry-After (5s)
-      t.mock.timers.tick(5_000);
-      await flush();
-
-      const result = await p;
-      assert.equal(callCount, 2);
-      assert.equal(result.status, 200);
+        const result = await p;
+        assert.equal(callCount, 2);
+        assert.equal(result.status, 200);
+      } finally {
+        restoreFetch();
+      }
     });
 
     it('retries multiple 429s until success', async (t) => {
@@ -273,29 +371,32 @@ describe('apiShield', () => {
       const shield = createApiShield({ rateLimitReqPerMin: Infinity });
       let callCount = 0;
 
-      const task = async () => {
+      mockFetch(async () => {
         callCount++;
         if (callCount <= 2) {
           return new Response('', { status: 429, headers: { 'Retry-After': '1' } });
         }
         return new Response('ok', { status: 200 });
-      };
+      });
+      try {
+        const p = shield.fetch(URL_A);
 
-      const p = shield.queue(task);
+        await flush();
+        assert.equal(callCount, 1);
 
-      await flush();
-      assert.equal(callCount, 1);
+        t.mock.timers.tick(1_000);
+        await flush();
+        assert.equal(callCount, 2);
 
-      t.mock.timers.tick(1_000);
-      await flush();
-      assert.equal(callCount, 2);
+        t.mock.timers.tick(1_000);
+        await flush();
 
-      t.mock.timers.tick(1_000);
-      await flush();
-
-      const result = await p;
-      assert.equal(callCount, 3);
-      assert.equal(result.status, 200);
+        const result = await p;
+        assert.equal(callCount, 3);
+        assert.equal(result.status, 200);
+      } finally {
+        restoreFetch();
+      }
     });
 
     it('uses X-Ratelimit.until when no Retry-After', async (t) => {
@@ -305,7 +406,7 @@ describe('apiShield', () => {
       let callCount = 0;
       const untilDate = new Date(100_000 + 3_000).toISOString();
 
-      const task = async () => {
+      mockFetch(async () => {
         callCount++;
         if (callCount === 1) {
           return new Response('', {
@@ -314,18 +415,21 @@ describe('apiShield', () => {
           });
         }
         return new Response('ok', { status: 200 });
-      };
+      });
+      try {
+        const p = shield.fetch(URL_A);
+        await flush();
+        assert.equal(callCount, 1);
 
-      const p = shield.queue(task);
-      await flush();
-      assert.equal(callCount, 1);
+        t.mock.timers.tick(3_000);
+        await flush();
 
-      t.mock.timers.tick(3_000);
-      await flush();
-
-      const result = await p;
-      assert.equal(callCount, 2);
-      assert.equal(result.status, 200);
+        const result = await p;
+        assert.equal(callCount, 2);
+        assert.equal(result.status, 200);
+      } finally {
+        restoreFetch();
+      }
     });
 
     it('falls back to fallbackRetryMs when no headers', async (t) => {
@@ -334,30 +438,33 @@ describe('apiShield', () => {
       const shield = createApiShield({ rateLimitReqPerMin: Infinity, fallbackRetryMs: 10_000 });
       let callCount = 0;
 
-      const task = async () => {
+      mockFetch(async () => {
         callCount++;
         if (callCount === 1) {
           return new Response('', { status: 429 });
         }
         return new Response('ok', { status: 200 });
-      };
+      });
+      try {
+        const p = shield.fetch(URL_A);
+        await flush();
+        assert.equal(callCount, 1);
 
-      const p = shield.queue(task);
-      await flush();
-      assert.equal(callCount, 1);
+        // Not enough time
+        t.mock.timers.tick(5_000);
+        await flush();
+        assert.equal(callCount, 1);
 
-      // Not enough time
-      t.mock.timers.tick(5_000);
-      await flush();
-      assert.equal(callCount, 1);
+        // Now enough
+        t.mock.timers.tick(5_000);
+        await flush();
 
-      // Now enough
-      t.mock.timers.tick(5_000);
-      await flush();
-
-      const result = await p;
-      assert.equal(callCount, 2);
-      assert.equal(result.status, 200);
+        const result = await p;
+        assert.equal(callCount, 2);
+        assert.equal(result.status, 200);
+      } finally {
+        restoreFetch();
+      }
     });
   });
 
@@ -368,48 +475,58 @@ describe('apiShield', () => {
       const shield = createApiShield({ rateLimitReqPerMin: Infinity });
       const untilDate = new Date(100_000 + 5_000).toISOString();
       const timestamps: Array<number> = [];
+      let callCount = 0;
 
-      const p1 = shield.queue(async () => {
+      mockFetch(async () => {
+        callCount++;
         timestamps.push(Date.now());
-        return new Response('ok', {
-          status: 200,
-          headers: { 'X-Ratelimit': JSON.stringify({ remaining: 0, until: untilDate }) },
-        });
-      });
-
-      const p2 = shield.queue(async () => {
-        timestamps.push(Date.now());
+        if (callCount === 1) {
+          return new Response('ok', {
+            status: 200,
+            headers: { 'X-Ratelimit': JSON.stringify({ remaining: 0, until: untilDate }) },
+          });
+        }
         return new Response('ok', { status: 200 });
       });
+      try {
+        const p1 = shield.fetch(URL_A);
+        const p2 = shield.fetch(URL_B);
 
-      // First task runs immediately
-      await flush();
-      assert.equal(timestamps.length, 1);
+        await flush();
+        assert.equal(timestamps.length, 1);
 
-      // Second task should be delayed by backOff (5s)
-      t.mock.timers.tick(5_000);
-      await flush();
+        t.mock.timers.tick(5_000);
+        await flush();
 
-      await Promise.all([p1, p2]);
-      assert.equal(timestamps.length, 2);
-      assert.ok(timestamps[1] - timestamps[0] >= 5_000);
+        await Promise.all([p1, p2]);
+        assert.equal(timestamps.length, 2);
+        assert.ok(timestamps[1] - timestamps[0] >= 5_000);
+      } finally {
+        restoreFetch();
+      }
     });
 
     it('does not back off when remaining > 0', async () => {
       const shield = createApiShield({ rateLimitReqPerMin: Infinity });
+      let callCount = 0;
 
-      const p1 = shield.queue(async () => {
-        return new Response('ok', {
-          status: 200,
-          headers: { 'X-Ratelimit': JSON.stringify({ remaining: 50, until: new Date(Date.now() + 60_000).toISOString() }) },
-        });
+      mockFetch(async () => {
+        callCount++;
+        if (callCount === 1) {
+          return new Response('ok', {
+            status: 200,
+            headers: { 'X-Ratelimit': JSON.stringify({ remaining: 50, until: new Date(Date.now() + 60_000).toISOString() }) },
+          });
+        }
+        return new Response('ok', { status: 200 });
       });
-
-      const p2 = shield.queue(() => ok());
-
-      await p1;
-      await p2;
-      assert.equal(shield.queueLength, 0);
+      try {
+        await shield.fetch(URL_A);
+        await shield.fetch(URL_B);
+        assert.equal(shield.queueLength, 0);
+      } finally {
+        restoreFetch();
+      }
     });
   });
 
@@ -417,83 +534,64 @@ describe('apiShield', () => {
     it('logs error and backs off on malformed JSON', async (t) => {
       t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 100_000 });
 
-      const errorMock = console.error as ReturnType<typeof mock.fn>;
+      const errorMock = console.error as unknown as ReturnType<typeof mock.fn>;
       const callsBefore = errorMock.mock.callCount();
 
       const shield = createApiShield({ rateLimitReqPerMin: Infinity, malformedHeaderBackoffMs: 2_000 });
       const timestamps: Array<number> = [];
 
-      const p1 = shield.queue(async () => {
+      mockFetch(async () => {
         timestamps.push(Date.now());
         return new Response('ok', {
           status: 200,
-          headers: { 'X-Ratelimit': 'not json' },
+          headers: timestamps.length === 1 ? { 'X-Ratelimit': 'not json' } : {},
         });
       });
-
-      const p2 = shield.queue(async () => {
-        timestamps.push(Date.now());
-        return new Response('ok', { status: 200 });
-      });
-
-      await flush();
-      assert.equal(timestamps.length, 1);
-      assert.equal(errorMock.mock.callCount() - callsBefore, 1);
-      const errorArg = errorMock.mock.calls[callsBefore].arguments[0];
-      assert.ok(errorArg instanceof Error);
-      assert.match(errorArg.message, /malformed X-Ratelimit/);
-
-      // Second task delayed by malformedHeaderBackoffMs (2s)
-      t.mock.timers.tick(2_000);
-      await flush();
-
-      await Promise.all([p1, p2]);
-      assert.equal(timestamps.length, 2);
-    });
-  });
-
-  describe('fetch', () => {
-    it('delegates to queue and global fetch', async () => {
-      const shield = createApiShield({ rateLimitReqPerMin: Infinity });
-
-      const mockResponse = new Response('ok', { status: 200 });
-      const originalFetch = globalThis.fetch;
-      const fetchMock = mock.fn(() => Promise.resolve(mockResponse));
-      globalThis.fetch = fetchMock;
-
       try {
-        const response = await shield.fetch('https://example.com/api', {
-          method: 'POST',
-          headers: { 'X-Test': '1' },
-        });
-        assert.equal(response, mockResponse);
-        assert.equal(fetchMock.mock.callCount(), 1);
-        const args = fetchMock.mock.calls[0].arguments as unknown as [string, RequestInit];
-        assert.equal(args[0], 'https://example.com/api');
-        assert.equal(args[1].method, 'POST');
+        const p1 = shield.fetch(URL_A);
+        const p2 = shield.fetch(URL_B);
+
+        await flush();
+        assert.equal(timestamps.length, 1);
+        assert.equal(errorMock.mock.callCount() - callsBefore, 1);
+        const errorArg = errorMock.mock.calls[callsBefore].arguments[0];
+        assert.ok(errorArg instanceof Error);
+        assert.match(errorArg.message, /malformed X-Ratelimit/);
+
+        // Second request delayed by malformedHeaderBackoffMs (2s)
+        t.mock.timers.tick(2_000);
+        await flush();
+
+        await Promise.all([p1, p2]);
+        assert.equal(timestamps.length, 2);
       } finally {
-        globalThis.fetch = originalFetch;
+        restoreFetch();
       }
     });
   });
 
   describe('queueLength', () => {
-    it('reflects the number of pending tasks', async (t) => {
+    it('reflects the number of pending requests', async (t) => {
       t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
 
       const shield = createApiShield({ rateLimitReqPerMin: Infinity });
       assert.equal(shield.queueLength, 0);
 
-      shield.pause();
-      const p1 = shield.queue(() => ok());
-      const p2 = shield.queue(() => ok());
-      assert.equal(shield.queueLength, 2);
+      mockFetch(async () => new Response());
+      try {
+        shield.pause();
+        const p1 = shield.fetch(URL_A);
+        const p2 = shield.fetch(URL_B);
+        assert.equal(shield.queueLength, 2);
 
-      shield.resume();
-      t.mock.timers.tick(0);
-      await flush();
-      await Promise.all([p1, p2]);
-      assert.equal(shield.queueLength, 0);
+        shield.resume();
+        t.mock.timers.tick(0);
+        await flush();
+        await Promise.all([p1, p2]);
+        assert.equal(shield.queueLength, 0);
+      } finally {
+        restoreFetch();
+      }
     });
   });
 });

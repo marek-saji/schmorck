@@ -226,7 +226,6 @@ function createApiShield({
   }
 
   return {
-    queue: shieldQueue,
     pause,
     resume,
     backOff,
