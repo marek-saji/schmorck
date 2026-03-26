@@ -61,8 +61,10 @@
 - other groupings (SSR):
   - date→film→time (default)
   - film→date→time
-- look things up on trakt in parallel (there’s 1000 req/5min limit),
-  so do that in batches
+- Cache language detection in localStorage
+
+## Next features
+
 - Figure out if we can sign in to Yorck to show our bookings, and if so,
   will these be ones from the app? If so, it’s useless.
-- Cache language detection in localStorage
+- iCal feed (include trailer time)
