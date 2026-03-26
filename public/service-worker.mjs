@@ -4,6 +4,7 @@ const PREFILL_URLS = [
   '/styles.css',
   '/main.mjs',
   '/trakt.mjs',
+  '/lib/apiShield.mjs',
   '/manifest.webmanifest',
   '/poster-fallback.svg',
   '/images/services/yorck.svg',
