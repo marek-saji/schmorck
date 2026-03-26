@@ -1,11 +1,57 @@
 # TODO
 
+- GET US UNBANNED
 - trakt rate limit
-  - on server, half allowed
-  - store last fetched time and respect on start
-  - on client, half allowed 
-  - fetch watched data only for day in viewport 
+  - write server/client wrapper that will prevent from hammering the API:
+    ```js
+    const traktApiShield = createApiShield({
+      // passing Infinity should also work. Then only thing this does is
+      // making sure only one request at a time is running
+      rateLimitReqPerMin: 1_000 / 5,
+    });
+    const json = await traktApiShield.fetch(url, fetchOptions);
 
+    // built–in recognition of rate limit headers:
+    // Make this work for commonly used headers
+    // https://chatgpt.com/c/69c4800c-bb88-8328-8026-c95d1889e915
+    if (response.headers.get('X-Ratelimit')) {
+      const backOffTimeMs = response.headers.get('Retry-After') * 1_000 - Date.now();
+      // backOff is the same as:
+      // queueShift(new PROMISE(resolve => { setTimeout(resolve, backOffTimeMs) }))
+      backOff(backOffTimeMs);
+    }
+
+    // also:
+    apiShield.queue(() => fetch(…));
+    apiShield.pause();
+    apiShield.resume();
+    ```
+    - also:
+      - pause between items, if close to the limit
+      - retrying
+      - if few requests fail, back off for longer
+      - check if online
+
+    - add function to queue
+    - await the response
+    - no two runs at the same time
+    - if rate limit is hit, wait until continuing
+    - each queue can have its own rate limit configured
+    - some mechanism to stop the queue from the function for a given
+      time (e.g. response header says us to do so)
+    - use for for server and client, for Yorck and Trakt
+      - for Trakt set rate limit / 2 (because we could be running both
+        server and client from the same IP)
+    - store last fetched time and respect on start (insert as first in
+      queue)
+  - fetch watched data only for day in viewport
+
+- Yorck → …?
+  - Schmorck
+  - Yorkc
+  - New Yorck
+- maybe switch to TMDB API?
+- cache posters
 - show <details> with raw film data; when mapping, include
   `Film._trakt` and `Film._yorck` for debugging
 - When fetching, trakt data, also fetch `GET /movies/:id?extended=full`
@@ -28,6 +74,7 @@
 - watched / check–in buttons
 - Yorck/Letterboxd/Trakt links on the list
 - mark screenings if only few left (that will also show specials)
+- mark if screening ends at wed/thu and there are no more
 - style up de-emphasised film cards. Either–or:
   - shrink posters of de-emphasised film cards. Don’t break
     single–column layout. Animate with a bounce
@@ -62,6 +109,7 @@
   - date→film→time (default)
   - film→date→time
 - Cache language detection in localStorage
+- letterboxd
 
 ## Next features
 
