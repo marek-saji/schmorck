@@ -1,5 +1,7 @@
-Design principles
------------------
+Technical design
+----------------
+
+## Principles
 
 - **Keep things simple**
 
