@@ -1,6 +1,6 @@
 // @ts-check
 
-import { createApiShield } from '/lib/apiShield.mjs';
+import { createApiShield } from './lib/apiShield.mjs';
 
 const TRAKT_API = 'https://api.trakt.tv';
 const CACHE_TTL_MS = 15 * 60_000;
