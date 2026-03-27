@@ -2,6 +2,7 @@ import type { Cinema, Film, Screening, ScheduleData } from './types.ts';
 import type { VistaCinema, VistaFilm, VistaScheduledFilm, VistaSession, VistaODataResponse } from './types/api/vista.ts';
 import type { YorckAppLaunchData, YorckCinema, YorckFilm, YorckSession } from './types/api/yorck.ts';
 import { YORCK_VISTA_API_URL, YORCK_VISTA_API_KEY } from './lib/env.ts';
+import { createApiShield } from './lib/apiShield.ts';
 import { slugify } from './lib/slug.ts';
 import { lookupFilm } from './trakt-client.ts';
 import { createFileStorage } from './lib/storage.ts';
@@ -155,6 +156,10 @@ async function enrichWithTrakt(data: ScheduleData): Promise<ScheduleData> {
 
 // ── Fetch ──
 
+// Vista does not publish rate limits, relying on 429 and Retry-After alone.
+// https://developer.vista.co/integration-platform/getting-started/rate-limiting
+const yorckShield = createApiShield({ rateLimitReqPerMin: Infinity });
+
 const API_HEADERS: HeadersInit = {
   'Accept': 'application/json',
   'Content-Type': 'application/json',
@@ -164,7 +169,7 @@ const API_HEADERS: HeadersInit = {
 async function fetchJson<T>(path: string): Promise<T> {
   const url = new URL(path, YORCK_VISTA_API_URL);
   console.log('API', 'GET', url.toString());
-  const res = await fetch(url, { headers: API_HEADERS });
+  const res = await yorckShield.fetch(url, { headers: API_HEADERS });
   if (!res.ok) {
     throw new Error(`Yorck API error: ${res.status} ${res.statusText}`);
   }
@@ -204,5 +209,5 @@ async function fetchSchedule(): Promise<ScheduleData> {
   }
 }
 
-export { mapApiResponse, fetchSchedule };
+export { mapApiResponse, fetchSchedule, yorckShield };
 export type { RawApiData };

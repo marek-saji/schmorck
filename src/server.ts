@@ -9,7 +9,7 @@ const PORT = appUrl.port
   ? Number(appUrl.port)
   : appUrl.protocol === 'https:' ? 443 : 80;
 import { Cache } from './cache.ts';
-import { fetchSchedule } from './yorck-client.ts';
+import { fetchSchedule, yorckShield } from './yorck-client.ts';
 import { homePage } from './templates/home.ts';
 import { filmPage } from './templates/film.ts';
 import { designSystemPage } from './templates/design-system.ts';
@@ -135,7 +135,7 @@ const server = createServer(async (req, res) => {
       }
       try {
         const posterUrl = new URL(`/CDN/media/entity/get/Movies/${film.id}`, YORCK_VISTA_API_URL);
-        const upstream = await fetch(posterUrl);
+        const upstream = await yorckShield.fetch(posterUrl);
         if (upstream.ok && upstream.body) {
           res.writeHead(200, {
             'Content-Type': upstream.headers.get('Content-Type') ?? 'image/jpeg',

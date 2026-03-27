@@ -1,7 +1,17 @@
 // @ts-check
 
+import { createApiShield } from '/lib/apiShield.mjs';
+
 const TRAKT_API = 'https://api.trakt.tv';
 const CACHE_TTL_MS = 15 * 60_000;
+
+// https://trakt.docs.apiary.io/#introduction/required-headers
+// GET: 1000 req / 5 min, mutations: 1 req / sec
+// Halved because server and client may share the same IP.
+const traktShield = createApiShield({
+  rateLimitReqPerMin: 100,
+  rateLimitMutatePerMin: 30,
+});
 
 const meta = JSON.parse(document.querySelector('meta[name="trakt"]')?.getAttribute('content') ?? '{}');
 const accessToken = document.cookie.match(/(?:^|;\s*)trakt_access_token=([^;]*)/)?.[1];
@@ -124,7 +134,7 @@ function updateBookmark(btn, isOnWatchlist) {
  * @param {RequestInit} [opts]
  */
 function traktFetch(path, opts = {}) {
-  return fetch(`${TRAKT_API}${path}`, {
+  return traktShield.fetch(`${TRAKT_API}${path}`, {
     ...opts,
     headers: {
       'Content-Type': 'application/json',

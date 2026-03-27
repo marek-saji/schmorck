@@ -12,9 +12,7 @@
     the limit
   - store info about fetching and restore at app start; if missing wait
     for some time
-  - use it for Yorck and Trakt. Configure values lower than allowed
-    - for Trakt use /2, because we can be hitting it from server and client
-    - on the client look into sharing state between tabs
+  - on the client look into sharing state between tabs
   - retrying on connection errors, with back off
   - check if online
   - use for for server and client, for Yorck and Trakt

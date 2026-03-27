@@ -1,4 +1,5 @@
 import { TRAKT_CLIENT_ID } from './lib/env.ts';
+import { createApiShield } from './lib/apiShield.ts';
 import type { Storage } from './lib/storage.ts';
 import type { TraktSearchResult, TraktMovie, TraktPeople } from './types/api/trakt.ts';
 import type { Film } from './types.ts';
@@ -12,38 +13,25 @@ const TRAKT_HEADERS: HeadersInit = {
   'trakt-api-version': '2',
 };
 
+// https://trakt.docs.apiary.io/#introduction/required-headers
+// GET: 1000 req / 5 min, mutations: 1 req / sec
+// Halved because server and client may share the same IP.
+const traktShield = createApiShield({
+  rateLimitReqPerMin: 100,
+  rateLimitMutatePerMin: 30,
+});
+
 const STORAGE_KEY_PREFIX = 'trakt-';
 
-let rateLimitRemaining = 1_000;
-
 async function traktFetch<T>(path: string): Promise<T> {
-  if (rateLimitRemaining <= 1) {
-    console.warn('Trakt rate limit nearly exhausted, pausing 60s');
-    await new Promise(r => setTimeout(r, 60_000));
-  }
-
-  const res = await fetch(`${TRAKT_API_BASE}${path}`, { headers: TRAKT_HEADERS });
-
-  const rateLimit = res.headers.get('X-Ratelimit');
-  if (rateLimit) {
-    try {
-      const parsed = JSON.parse(rateLimit);
-      rateLimitRemaining = parsed.remaining ?? rateLimitRemaining;
-    } catch { /* ignore */ }
-  }
-
-  if (res.status === 429) {
-    const retryAfter = Number(res.headers.get('Retry-After') ?? '60');
-    console.warn(`Trakt rate limited, retrying after ${retryAfter}s`);
-    await new Promise(r => setTimeout(r, retryAfter * 1_000));
-    return traktFetch(path);
-  }
-
+  const res = await traktShield.fetch(
+    new URL(path, TRAKT_API_BASE),
+    { headers: TRAKT_HEADERS },
+  );
   if (!res.ok) {
     const cause = await res.text();
     throw new Error(`Trakt API error: ${res.status} ${res.statusText}`, { cause });
   }
-
   return res.json() as Promise<T>;
 }
 
