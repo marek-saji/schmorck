@@ -1,56 +1,30 @@
-# TODO
+## Now
 
 - GET US UNBANNED
-- trakt rate limit
-  - write server/client wrapper that will prevent from hammering the API:
-    ```js
-    const traktApiShield = createApiShield({
-      // passing Infinity should also work. Then only thing this does is
-      // making sure only one request at a time is running
-      rateLimitReqPerMin: 1_000 / 5,
-    });
-    const json = await traktApiShield.fetch(url, fetchOptions);
-
-    // built–in recognition of rate limit headers:
-    // Make this work for commonly used headers
-    // https://chatgpt.com/c/69c4800c-bb88-8328-8026-c95d1889e915
-    if (response.headers.get('X-Ratelimit')) {
-      const backOffTimeMs = response.headers.get('Retry-After') * 1_000 - Date.now();
-      // backOff is the same as:
-      // queueShift(new PROMISE(resolve => { setTimeout(resolve, backOffTimeMs) }))
-      backOff(backOffTimeMs);
-    }
-
-    // also:
-    apiShield.queue(() => fetch(…));
-    apiShield.pause();
-    apiShield.resume();
-    ```
-    - also:
-      - pause between items, if close to the limit
-      - retrying
-      - if few requests fail, back off for longer
-      - check if online
-
-    - add function to queue
-    - await the response
-    - no two runs at the same time
-    - if rate limit is hit, wait until continuing
-    - each queue can have its own rate limit configured
-    - some mechanism to stop the queue from the function for a given
-      time (e.g. response header says us to do so)
-    - use for for server and client, for Yorck and Trakt
-      - for Trakt set rate limit / 2 (because we could be running both
-        server and client from the same IP)
-    - store last fetched time and respect on start (insert as first in
-      queue)
-  - fetch watched data only for day in viewport
-
 - Yorck → …?
   - Schmorck
   - Yorkc
   - New Yorck
-- maybe switch to TMDB API?
+- fetch watched data only for day in viewport
+- api shield
+  - pause between requests, but only a tiny bit, but keep track of how
+    many requests has been made and increase the pause when closing to
+    the limit
+  - store info about fetching and restore at app start; if missing wait
+    for some time
+  - use it for Yorck and Trakt. Configure values lower than allowed
+    - for Trakt use /2, because we can be hitting it from server and client
+    - on the client look into sharing state between tabs
+  - retrying on connection errors, with back off
+  - check if online
+  - use for for server and client, for Yorck and Trakt
+    - for Trakt set rate limit / 2 (because we could be running both
+      server and client from the same IP)
+
+## Next
+
+- recognise more types of rate limit headers (in case Yorck API uses them)
+  https://chatgpt.com/c/69c4800c-bb88-8328-8026-c95d1889e915
 - cache posters
 - show <details> with raw film data; when mapping, include
   `Film._trakt` and `Film._yorck` for debugging
@@ -109,6 +83,9 @@
   - date→film→time (default)
   - film→date→time
 - Cache language detection in localStorage
+
+## Later
+
 - letterboxd
 
 ## Next features
