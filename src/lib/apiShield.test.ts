@@ -287,6 +287,22 @@ describe('apiShield', () => {
       }
     });
 
+    it('passes signal to the underlying fetch call', async () => {
+      const shield = createApiShield({ rateLimitReqPerMin: Infinity });
+      const controller = new AbortController();
+
+      mockFetch(async (...args: Array<unknown>) => {
+        const opts = args[1] as RequestInit;
+        assert.equal(opts.signal, controller.signal);
+        return new Response();
+      });
+      try {
+        await shield.fetch(URL_A, { signal: controller.signal });
+      } finally {
+        restoreFetch();
+      }
+    });
+
     it('removes request from queue when aborted', async (t) => {
       t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
 
@@ -557,6 +573,7 @@ describe('apiShield', () => {
         const errorArg = errorMock.mock.calls[callsBefore].arguments[0];
         assert.ok(errorArg instanceof Error);
         assert.match(errorArg.message, /malformed X-Ratelimit/);
+        assert.ok(errorArg.cause instanceof SyntaxError, 'cause is the JSON parse error');
 
         // Second request delayed by malformedHeaderBackoffMs (2s)
         t.mock.timers.tick(2_000);
