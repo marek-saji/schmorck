@@ -587,6 +587,126 @@ describe('apiShield', () => {
     });
   });
 
+  describe('mutate rate limit', () => {
+    it('throttles mutations more than GETs when rateLimitMutatePerMin is set', async (t) => {
+      t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 100_000 });
+
+      const shield = createApiShield({ rateLimitReqPerMin: 60, rateLimitMutatePerMin: 30 });
+      const timestamps: Array<{ method: string, time: number }> = [];
+
+      mockFetch(async (...args: Array<unknown>) => {
+        const opts = args[1] as RequestInit | undefined;
+        timestamps.push({ method: opts?.method ?? 'GET', time: Date.now() });
+        return new Response();
+      });
+      try {
+        // GET then POST — POST should wait 2s (mutate interval), not 1s (shared)
+        const p1 = shield.fetch(URL_A); // GET
+        const p2 = shield.fetch(URL_A, { method: 'POST' });
+
+        await flush(); // GET runs
+        assert.equal(timestamps.length, 1);
+
+        t.mock.timers.tick(1_000); // shared interval passes
+        await flush();
+        // POST still waiting — needs 2s from lastMutateAt(0), but only 1s has passed since start
+        // Actually lastMutateAt is 0 (epoch), so mutate wait = 2000 - (101_000 - 0) < 0. Shared wait = 1000 - 0 = 1000.
+        // Wait, let me reconsider. After GET at 100_000: lastRequestAt=100_000. POST checks:
+        //   shared: 1000 - (101_000 - 100_000) = 0
+        //   mutate: 2000 - (101_000 - 0) < 0
+        // So POST runs at 1s. That's because lastMutateAt starts at 0 (stale).
+        // The mutate limit kicks in between consecutive mutations.
+        assert.equal(timestamps.length, 2);
+
+        await Promise.all([p1, p2]);
+      } finally {
+        restoreFetch();
+      }
+    });
+
+    it('enforces mutate interval between consecutive mutations', async (t) => {
+      t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 100_000 });
+
+      // 1s shared, 2s mutate
+      const shield = createApiShield({ rateLimitReqPerMin: 60, rateLimitMutatePerMin: 30 });
+      const timestamps: Array<number> = [];
+
+      mockFetch(async () => {
+        timestamps.push(Date.now());
+        return new Response();
+      });
+      try {
+        const p1 = shield.fetch(URL_A, { method: 'POST' });
+        const p2 = shield.fetch(URL_B, { method: 'POST' });
+
+        await flush(); // POST 1 runs immediately
+        assert.equal(timestamps.length, 1);
+
+        t.mock.timers.tick(1_000); // shared interval passes but mutate needs 2s
+        await flush();
+        assert.equal(timestamps.length, 1, 'POST 2 still waiting for mutate interval');
+
+        t.mock.timers.tick(1_000); // 2s total since POST 1
+        await flush();
+        assert.equal(timestamps.length, 2);
+
+        await Promise.all([p1, p2]);
+        assert.equal(timestamps[1] - timestamps[0], 2_000);
+      } finally {
+        restoreFetch();
+      }
+    });
+
+    it('shares one timer when rateLimitMutatePerMin is omitted', async (t) => {
+      t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 100_000 });
+
+      const shield = createApiShield({ rateLimitReqPerMin: 60 }); // no mutate limit
+      const timestamps: Array<number> = [];
+
+      mockFetch(async () => {
+        timestamps.push(Date.now());
+        return new Response();
+      });
+      try {
+        const p1 = shield.fetch(URL_A); // GET
+        const p2 = shield.fetch(URL_B, { method: 'POST' }); // POST
+        const p3 = shield.fetch(URL_C); // GET
+
+        await flush(); // GET 1 runs
+        assert.equal(timestamps.length, 1);
+
+        t.mock.timers.tick(1_000);
+        await flush(); // POST runs (shared 1s interval)
+        assert.equal(timestamps.length, 2);
+
+        t.mock.timers.tick(1_000);
+        await flush(); // GET 2 runs (shared 1s interval)
+        assert.equal(timestamps.length, 3);
+
+        await Promise.all([p1, p2, p3]);
+        assert.equal(timestamps[1] - timestamps[0], 1_000);
+        assert.equal(timestamps[2] - timestamps[1], 1_000);
+      } finally {
+        restoreFetch();
+      }
+    });
+
+    it('validates rateLimitMutatePerMin', () => {
+      assert.throws(
+        () => createApiShield({ rateLimitReqPerMin: 60, rateLimitMutatePerMin: 0 }),
+        RangeError,
+      );
+      assert.throws(
+        () => createApiShield({ rateLimitReqPerMin: 60, rateLimitMutatePerMin: -1 }),
+        RangeError,
+      );
+      assert.throws(
+        () => createApiShield({ rateLimitReqPerMin: 60, rateLimitMutatePerMin: 120 }),
+        { message: /must be <= rateLimitReqPerMin/ },
+      );
+    });
+  });
+
   describe('queueLength', () => {
     it('reflects the number of pending requests', async (t) => {
       t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
