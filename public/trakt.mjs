@@ -2,7 +2,8 @@
 
 import { createApiShield } from './lib/apiShield.mjs';
 
-const TRAKT_API = 'https://api.trakt.tv';
+// temporarily avoid hitting trakt.tv API, because we got banned on ClaudFlare level
+const TRAKT_API = 'https://api.trakt.tv.test';
 const CACHE_TTL_MS = 15 * 60_000;
 
 // https://trakt.docs.apiary.io/#introduction/required-headers
