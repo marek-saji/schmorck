@@ -22,19 +22,24 @@ const userEl = document.getElementById('trakt-user');
 if (userEl) {
   if (accessToken) {
     try {
-      const res = await traktFetch('/users/me');
-      if (res.ok) {
-        const user = await res.json();
-        const avatar = user.images?.avatar?.full;
-        userEl.innerHTML = `
-          ${avatar ? `<img src="${avatar}" alt="" class="trakt-avatar">` : ''}
-          <span class="trakt-username">${user.username}</span>
-          <a href="/auth/trakt/logout" class="trakt-logout">Sign out</a>
-        `;
-      } else {
-        showSignIn();
+      const meRes = await traktFetch('/users/me');
+      if (!meRes.ok) {
+        throw new Error('Failed to fetch basic user data', { cause: meRes })
       }
-    } catch {
+      const me = await meRes.json();
+      const userRes = await traktFetch(`/users/${me.username}?extended=full`);
+      if (!userRes.ok) {
+        throw new Error('Failed to fetch extended user data', { cause: userRes })
+      }
+      const user = await userRes.json();
+      const avatar = user.images?.avatar?.full;
+      userEl.innerHTML = `
+        ${avatar ? `<img src="${avatar}" alt="" class="trakt-avatar">` : ''}
+        <span class="trakt-username">${user.username}</span>
+        <a href="/auth/trakt/logout" class="trakt-logout">Sign out</a>
+      `;
+    } catch (cause) {
+      console.error(new Error('Failed to fetch user data', { cause }));
       showSignIn();
     }
   } else {
