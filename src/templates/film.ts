@@ -72,7 +72,7 @@ function filmPage({ film, screenings, cinemas, fetchedAt, date }: FilmPageOption
     ${film.synopsis ? `<div class="film-synopsis" lang="de">${escapeHtml(film.synopsis)}</div>` : ''}
     <nav class="film-links">
       <a href="https://www.yorck.de/de/films/${escapeHtml(film.slug)}"><img src="/images/services/yorck.svg" alt="View on Yorck.de" class="film-link-icon"></a>
-      <a href="https://letterboxd.com/search/${encodeURIComponent(film.title)}/"><img src="/images/services/letterboxd.svg" alt="Search on Letterboxd" class="film-link-icon"></a>
+      <a href="https://letterboxd.com/search/${encodeURIComponent(film.title + ' ' + film.releaseYear).replaceAll('%20', '+')}/"><img src="/images/services/letterboxd.svg" alt="Search on Letterboxd" class="film-link-icon"></a>
       <a href="${film.traktSlug ? new URL(`/movies/${film.traktSlug}`, 'https://app.trakt.tv') : `https://app.trakt.tv/search?${new URLSearchParams({ m: 'movie', q: film.title })}`}"><img src="/images/services/trakt.svg" alt="${film.traktSlug ? 'View on' : 'Search on'} Trakt.tv" class="film-link-icon"></a>
     </nav>
   </div>

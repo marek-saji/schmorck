@@ -67,7 +67,29 @@ async function searchMovie(title: string, year: number): Promise<TraktSearchResu
   const params = new URLSearchParams({ query: title, fields: 'title' });
   if (year) params.set('years', String(year));
   const results = await traktFetch<Array<TraktSearchResult>>(`/search/movie?${params}`);
-  return results.find(result => {
+  const sortedResults = results
+    .sort((a, b) => {
+      // Compare Trak.tv score first, but it’s often just the same value 🤷
+      const scoreDiff = a.score - b.score;
+      if (scoreDiff !== 0) {
+        return scoreDiff;
+      }
+      // Then prefer exact title matches
+      else if (a.movie.title !== b.movie.title) {
+        if (a.movie.title === title) {
+          return -1
+        } else if (b.movie.title === title) {
+          return 1;
+        } else {
+          return 0;
+        }
+      }
+      // Then choose the one with closest release year
+      else {
+        return Math.abs(a.movie.year - year) - Math.abs(b.movie.year - year)
+      }
+    });
+  return sortedResults.find(result => {
     return year == null || Math.abs(result.movie.year - year) <= 2;
   }) ?? null
 }

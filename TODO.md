@@ -23,7 +23,6 @@
   - Decouple `data-*` state from ordering, then we can revert `a438478`
   - try out: when changing status, update order with view transition
 - Matching
-  - Alpha matched 2026, not 2025
   - Look into unmatched
   - SOLVE PROBLEM with matching.
     - Sometimes `openingDate` is incorrect for re–release,
