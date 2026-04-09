@@ -1,7 +1,7 @@
-import { TRAKT_CLIENT_ID } from './lib/env.ts';
+import { TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET } from './lib/env.ts';
 import { createApiShield } from './lib/apiShield.ts';
 import type { Storage } from './lib/storage.ts';
-import type { TraktSearchResult, TraktMovie, TraktPeople } from './types/api/trakt.ts';
+import type { TraktSearchResult, TraktMovie, TraktPeople, TraktOAuthTokenResult } from './types/api/trakt.ts';
 import type { Film } from './types.ts';
 import pkg from '../package.json' with { type: 'json' };
 
@@ -24,10 +24,19 @@ const traktShield = createApiShield({
 
 const STORAGE_KEY_PREFIX = 'trakt-';
 
-async function traktFetch<T>(path: string): Promise<T> {
+async function traktFetch<T>(
+  path: string,
+  { body }: { body?: object } = {}
+): Promise<T> {
+  const method = body ? 'POST' : 'GET'
+
   const res = await traktShield.fetch(
     new URL(path, TRAKT_API_BASE),
-    { headers: TRAKT_HEADERS },
+    {
+      method,
+      headers: TRAKT_HEADERS,
+      body: body ? JSON.stringify(body) : undefined,
+    },
   );
   if (!res.ok) {
     let cause = await res.text();
@@ -38,6 +47,20 @@ async function traktFetch<T>(path: string): Promise<T> {
     throw new Error(`Trakt API error: ${res.status} ${res.statusText}`, { cause });
   }
   return res.json() as Promise<T>;
+}
+
+async function oAuthTokenExchange(
+  { origin, code }: { origin: string, code: string }
+): Promise<TraktOAuthTokenResult> {
+  return await traktFetch<TraktOAuthTokenResult>('/oauth/token', {
+    body: ({
+      code,
+      client_id: TRAKT_CLIENT_ID,
+      client_secret: TRAKT_CLIENT_SECRET,
+      redirect_uri: new URL('/auth/trakt/callback', origin),
+      grant_type: 'authorization_code',
+    }),
+  });
 }
 
 async function searchMovie(title: string, year: number): Promise<TraktSearchResult | null> {
@@ -143,5 +166,5 @@ function enrichFilm(film: Film, movie: TraktMovie, people: TraktPeople): Film {
   };
 }
 
-export { lookupFilm };
+export { lookupFilm, oAuthTokenExchange as traktOAuthTokenExchange };
 export type { StoredTraktData };

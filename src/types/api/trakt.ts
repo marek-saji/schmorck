@@ -20,6 +20,12 @@ export interface TraktMovie {
   status?: string;
 }
 
+export interface TraktOAuthTokenResult {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number
+}
+
 export interface TraktSearchResult {
   score: number;
   movie: TraktMovie;

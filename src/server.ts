@@ -14,6 +14,7 @@ import { homePage } from './templates/home.ts';
 import { filmPage } from './templates/film.ts';
 import { designSystemPage } from './templates/design-system.ts';
 import type { ScheduleData } from './types.ts';
+import {traktOAuthTokenExchange} from './trakt-client.ts';
 
 const CACHING_ENABLED = NODE_ENV !== 'development' && !!COMMIT_SHA;
 const STATIC_MAX_AGE_S = 30 * 24 * 60 * 60; // 1 month
@@ -214,21 +215,7 @@ const server = createServer(async (req, res) => {
       }
       try {
         const origin = getOrigin(req)
-        const tokenRes = await fetch('https://api.trakt.tv/oauth/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code,
-            client_id: TRAKT_CLIENT_ID,
-            client_secret: TRAKT_CLIENT_SECRET,
-            redirect_uri: new URL('/auth/trakt/callback', origin),
-            grant_type: 'authorization_code',
-          }),
-        });
-        if (!tokenRes.ok) {
-          throw new Error(`Token exchange failed: ${tokenRes.status}`);
-        }
-        const tokens = await tokenRes.json() as { access_token: string; refresh_token: string; expires_in: number };
+        const tokens = await traktOAuthTokenExchange({ origin, code })
         const maxAge = tokens.expires_in;
         res.writeHead(302, {
           'Location': '/',
