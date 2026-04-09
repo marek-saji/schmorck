@@ -67,7 +67,6 @@ function getOrigin(req: IncomingMessage) {
 }
 
 const server = createServer(async (req, res) => {
-  console.log(req.method, req.url);
   const url = new URL(req.url ?? '/', APP_URL);
 
   try {
@@ -106,6 +105,8 @@ const server = createServer(async (req, res) => {
       }
       return;
     }
+
+    console.log(req.method, req.url);
 
     // On cold start (empty cache), await the first fetch
     if (!cache.get()) {
