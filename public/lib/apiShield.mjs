@@ -246,10 +246,13 @@ function createApiShield({
    * @param {RequestInit} [options]
    * @returns {Promise<Response>}
    */
-  function shieldFetch(url, options) {
+  async function shieldFetch(url, options) {
     const signal = options?.signal;
     const method = options?.method ?? 'GET';
-    return shieldQueue(() => fetch(url, options), { signal, method });
+    const startMs = performance.now();
+    const response = await shieldQueue(() => fetch(url, options), { signal, method });
+    console.log('[API]', method, String(url), options, `(took ${performance.now() - startMs}ms)`)
+    return response;
   }
 
   return {
