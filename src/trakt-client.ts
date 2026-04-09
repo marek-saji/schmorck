@@ -3,6 +3,7 @@ import { createApiShield } from './lib/apiShield.ts';
 import type { Storage } from './lib/storage.ts';
 import type { TraktSearchResult, TraktMovie, TraktPeople } from './types/api/trakt.ts';
 import type { Film } from './types.ts';
+import pkg from '../package.json' with { type: 'json' };
 
 const TRAKT_API_BASE = 'https://api.trakt.tv';
 
@@ -10,6 +11,7 @@ const TRAKT_HEADERS: HeadersInit = {
   'Content-Type': 'application/json',
   'trakt-api-key': TRAKT_CLIENT_ID,
   'trakt-api-version': '2',
+  'User-Agent': `${pkg.name}/${pkg.version}`,
 };
 
 // https://trakt.docs.apiary.io/#introduction/required-headers

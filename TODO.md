@@ -1,6 +1,5 @@
 ## Now
 
-- GET US UNBANNED
 - Yorck → …?
   - Schmorck
   - Yorkc
