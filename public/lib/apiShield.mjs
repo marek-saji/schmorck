@@ -251,7 +251,13 @@ function createApiShield({
     const method = options?.method ?? 'GET';
     const startMs = performance.now();
     const response = await shieldQueue(() => fetch(url, options), { signal, method });
-    console.log('[API]', method, String(url), options, `(took ${performance.now() - startMs}ms)`)
+    let body = options?.body
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body)
+      } catch {}
+    }
+    console.log('[API]', method, String(url), { ...options, body }, `(took ${performance.now() - startMs}ms)`)
     return response;
   }
 

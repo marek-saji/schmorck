@@ -274,8 +274,8 @@ server.listen(PORT, () => {
   const addr = server.address();
   const actualPort = typeof addr === 'object' && addr ? addr.port : PORT;
   const listenUrl = PORT === 0 ? APP_URL.replace(':0', `:${actualPort}`) : APP_URL;
-  console.log(`Listening on ${listenUrl}`);
-  console.log(`Caching: ${CACHING_ENABLED ? `enabled (${COMMIT_SHA})` : 'disabled'}`);
+  console.log('Listening on', listenUrl);
+  console.log('HTTP caching?:', CACHING_ENABLED);
 });
 
 export { server };
