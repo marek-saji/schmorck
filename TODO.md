@@ -1,9 +1,5 @@
 ## Now
 
-- Yorck → …?
-  - Schmorck
-  - Yorkc
-  - New Yorck
 - fetch watched data only for day in viewport
 - api shield
   - pause between requests, but only a tiny bit, but keep track of how

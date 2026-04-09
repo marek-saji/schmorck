@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@saji/yorck-alt",
+  "name": "@saji/schmorck",
   "description": "Alternative UI for https://yorck.de",
   "keywords": [
     "berlin",
@@ -12,13 +12,13 @@
     "name": "Marek ‘saji’ Augustynowicz",
     "url": "https://mastodon.social/@saji"
   },
-  "homepage": "https://github.com/marek-saji/yorck-alt",
+  "homepage": "https://github.com/marek-saji/schmorck",
   "bugs": {
-    "url": "https://github.com/marek-saji/yorck-alt/issues"
+    "url": "https://github.com/marek-saji/schorck/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:marek-saji/yorck-alt.git"
+    "url": "git@github.com:marek-saji/schmorck.git"
   },
   "version": "1.0.0-0",
   "license": "ISC",

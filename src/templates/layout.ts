@@ -17,7 +17,7 @@ function layout({ title, fetchedAt, body }: LayoutOptions): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(title)} — Yorck</title>
+  <title>${escapeHtml(title)} — Schmorck</title>
   <meta name="theme-color" content="#111111">
   <link rel="stylesheet" href="/styles.css">
   <link rel="manifest" href="/manifest.webmanifest">
@@ -34,7 +34,7 @@ function layout({ title, fetchedAt, body }: LayoutOptions): string {
         width="32" height="32"
         class="header-logo"
       >
-      Yorck
+      Schmorck
     </a>
     <div id="trakt-user"></div>
   </header>

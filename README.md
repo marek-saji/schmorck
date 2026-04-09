@@ -1,5 +1,5 @@
-`yorck-alt`
------------
+`@saji/schmorck`
+----------------
 
 Alternative UI for https://yorck.de
 
