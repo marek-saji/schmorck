@@ -23,7 +23,7 @@ function layout({ title, fetchedAt, body }: LayoutOptions): string {
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/images/icons/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/images/icons/icon.svg">
-  <meta name="trakt" content='${escapeHtml(JSON.stringify({ clientId: TRAKT_CLIENT_ID, redirectUri: APP_URL + '/auth/trakt/callback' }))}'>
+  <meta name="trakt" content='${escapeHtml(JSON.stringify({ clientId: TRAKT_CLIENT_ID }))}'>
 </head>
 <body>
   <header>

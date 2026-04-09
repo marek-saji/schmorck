@@ -46,7 +46,7 @@ function showSignIn() {
   if (!userEl || !meta.clientId) return;
   const authorizeUrl = `https://trakt.tv/oauth/authorize?${new URLSearchParams({
     client_id: meta.clientId,
-    redirect_uri: meta.redirectUri,
+    redirect_uri: (new URL('/auth/trakt/callback' , window.location.href)).toString(),
     response_type: 'code',
   })}`;
   userEl.innerHTML = `<a href="${authorizeUrl}" class="trakt-signin">Sign in to Trakt.tv <img src="/images/services/trakt.svg" alt="" class="trakt-signin-icon"></a>`;

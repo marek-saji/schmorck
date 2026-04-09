@@ -1,4 +1,4 @@
-import { createServer } from 'node:http';
+import { createServer, type IncomingMessage } from 'node:http';
 import { Readable } from 'node:stream';
 import { readFile } from 'node:fs/promises';
 import { join, extname } from 'node:path';
@@ -47,6 +47,23 @@ function triggerRefreshIfStale(): void {
   }).catch(err => {
     console.error('Background refresh failed:', err);
   });
+}
+
+function getOrigin(req: IncomingMessage) {
+  const host = req.headers.host;
+  if (!host) {
+    throw new Error('Host header missing');
+  }
+
+  let scheme: string;
+  const xfProto = req.headers['x-forwarded-proto'];
+  if (xfProto) {
+    scheme = String(xfProto).split(',')[0].trim();
+  } else {
+    scheme = (('encrypted' in req.socket) && req.socket.encrypted) ? 'https' : 'http'
+  }
+
+  return `${scheme}://${host}`
 }
 
 const server = createServer(async (req, res) => {
@@ -195,6 +212,7 @@ const server = createServer(async (req, res) => {
         return;
       }
       try {
+        const origin = getOrigin(req)
         const tokenRes = await fetch('https://api.trakt.tv/oauth/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -202,7 +220,7 @@ const server = createServer(async (req, res) => {
             code,
             client_id: TRAKT_CLIENT_ID,
             client_secret: TRAKT_CLIENT_SECRET,
-            redirect_uri: `${APP_URL}/auth/trakt/callback`,
+            redirect_uri: new URL('/auth/trakt/callback', origin),
             grant_type: 'authorization_code',
           }),
         });
