@@ -58,9 +58,11 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  const url = new URL(request.url);
 
   if (request.method !== 'GET') return;
-  if (new URL(request.url).origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin) return;
+  if (url.pathname === '/auth' || url.pathname.startsWith('/auth/')) return;
   if (request.headers.get('accept') === 'text/event-stream') return;
 
   event.respondWith((async () => {
