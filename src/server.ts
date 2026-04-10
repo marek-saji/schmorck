@@ -96,7 +96,12 @@ const server = createServer(async (req, res) => {
         };
         if (CACHING_ENABLED) {
           headers['ETag'] = `"${COMMIT_SHA}"`;
-          headers['Cache-Control'] = `public, max-age=${STATIC_MAX_AGE_S}, immutable`;
+          const nowBerlin = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+          const nowBerlinMs = nowBerlin.getTime();
+          const midnightBerlinMs = nowBerlin.setHours(24, 0, 0, 0)
+          const secondsTillMidnight = Math.floor((midnightBerlinMs - nowBerlinMs) / 1_000);
+          const maxAge = Math.min(STATIC_MAX_AGE_S, secondsTillMidnight)
+          headers['Cache-Control'] = `public, max-age=${maxAge}, immutable`;
         }
         res.writeHead(200, headers);
         res.end(content);
