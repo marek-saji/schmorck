@@ -43,6 +43,12 @@ function layout({ title, fetchedAt, body }: LayoutOptions): string {
   <div id="banner" class="banner"${fetchedAt ? '' : ' hidden'} data-severity=warning>
     <p id="banner-text">${bannerText}</p>
   </div>
+  <template id="tpl-status-sections">
+    <section class="status-group" data-state="new" aria-label="New"></section>
+    <section class="status-group" data-state="watchlist" aria-label="Watchlist"></section>
+    <section class="status-group" data-state="watched" aria-label="Watched"></section>
+    <section class="status-group" data-state="ignore" aria-label="Not interested"></section>
+  </template>
   <template id="tpl-trakt-user">
     <img src="" alt="" class="trakt-avatar">
     <span class="trakt-username"></span>

@@ -82,9 +82,6 @@ if (accessToken) {
   const cards = document.querySelectorAll('.film-card[data-trakt-id]');
   for (const card of cards) {
     const traktId = Number(card.dataset.traktId);
-    card.dataset.watched = String(watchedIds.has(traktId));
-    card.dataset.watchlist = String(watchlistIds.has(traktId));
-    card.dataset.ignore = 'false';
 
     // Bookmark button
     const btn = document.createElement('button');
@@ -110,10 +107,14 @@ if (accessToken) {
         } else {
           watchlistIds.add(traktId);
         }
-        // Update bookmark buttons only (don't change data-* to avoid reordering)
-        for (const c of document.querySelectorAll(`.film-card[data-trakt-id="${traktId}"]`)) {
+        const nowOnWatchlist = watchlistIds.has(traktId);
+        for (const c of /** @type {NodeListOf<HTMLElement>} */ (
+          document.querySelectorAll(`.film-card[data-trakt-id="${traktId}"]`)
+        )) {
           const b = c.querySelector('.watchlist-btn');
-          if (b) updateBookmark(/** @type {HTMLButtonElement} */ (b), watchlistIds.has(traktId));
+          if (b) updateBookmark(/** @type {HTMLButtonElement} */ (b), nowOnWatchlist);
+          const dateGroup = /** @type {HTMLElement | null} */ (c.closest('.date-group'));
+          if (dateGroup) organiseBySection(dateGroup, watchlistIds, watchedIds);
         }
         clearCache('trakt_watchlist');
       }
@@ -127,9 +128,66 @@ if (accessToken) {
       posterLink.appendChild(btn);
     }
   }
+
+  for (const dateGroup of /** @type {NodeListOf<HTMLElement>} */ (
+    document.querySelectorAll('.date-group')
+  )) {
+    organiseBySection(dateGroup, watchlistIds, watchedIds);
+  }
 }
 
 // ── Helpers ──
+
+/**
+ * @param {Element} parent
+ * @param {Element} node
+ */
+function moveInto(parent, node) {
+  if ('moveBefore' in parent) {
+    parent.moveBefore(node, null);
+  } else {
+    parent.append(node);
+  }
+}
+
+/**
+ * @param {HTMLElement} dateGroup
+ * @param {Set<number>} watchlistIds
+ * @param {Set<number>} watchedIds
+ */
+function organiseBySection(dateGroup, watchlistIds, watchedIds) {
+  const tpl = /** @type {HTMLTemplateElement} */ (document.getElementById('tpl-status-sections'));
+
+  /** @param {HTMLElement} card */
+  const stateFor = (card) => {
+    const id = Number(card.dataset.traktId);
+    return watchlistIds.has(id) ? 'watchlist'
+      : watchedIds.has(id)      ? 'watched'
+      :                           'new';
+  };
+
+  const unknown = dateGroup.querySelector('.status-group[data-state="unknown"]');
+  if (unknown) {
+    unknown.after(tpl.content.cloneNode(true));
+    for (const card of /** @type {Array<HTMLElement>} */ (
+      Array.from(unknown.querySelectorAll('.film-card'))
+    )) {
+      const target = dateGroup.querySelector(`.status-group[data-state="${stateFor(card)}"]`);
+      if (!target) {
+        throw new Error('Failed to find a group to move a card to', { cause: card });
+      }
+      moveInto(target, card);
+    }
+    unknown.remove();
+  } else {
+    for (const card of /** @type {NodeListOf<HTMLElement>} */ (
+      dateGroup.querySelectorAll('.film-card[data-trakt-id]')
+    )) {
+      const target = dateGroup.querySelector(`.status-group[data-state="${stateFor(card)}"]`);
+      if (target && card.parentElement !== target) moveInto(target, card);
+    }
+  }
+}
 
 /**
  * @param {HTMLButtonElement} btn

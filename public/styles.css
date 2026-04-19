@@ -204,8 +204,7 @@ footer {
 
 /* ── Date Group ── */
 .date-group {
-  display: flex;
-  flex-direction: column;
+  display: block;
 }
 
 .date-group + .date-group {
@@ -213,7 +212,6 @@ footer {
 }
 
 .date-heading {
-  order: -1;
   position: sticky;
   top: 0;
   z-index: var(--z-date);
@@ -323,7 +321,7 @@ footer {
   gap: var(--spacing-xs);
 }
 
-.film-card:where([data-watched="true"], [data-ignore="true"]) {
+:where(.status-group[data-state="watched"], .status-group[data-state="ignore"]) .film-card {
   .film-poster-link {
     overflow: hidden;
   }
@@ -501,7 +499,7 @@ a.screening:hover {
     margin: var(--spacing-md) var(--spacing-md) 0;
   }
 
-  .film-card:where([data-watched="true"], [data-ignore="true"]) {
+  :where(.status-group[data-state="watched"], .status-group[data-state="ignore"]) .film-card {
     .film-poster-link {
       max-block-size: 3em;
     }
@@ -593,13 +591,11 @@ a.screening:hover {
   color: var(--color-accent);
 }
 
-.film-card {
-  /* ── Film Card Sorting ── */
-  &:where([data-watchlist="true"]) { order: 1; }
-  &:where([data-watched="true"]) { order: 2; }
-  &:where([data-ignore="true"]) { order: 3; }
+/* ── Status Group ── */
+.status-group:empty { display: none; }
 
-  &:where([data-ignore="true"]) { opacity: 0.3; }
-  &:where([data-watched="true"]:not([data-watchlist="true"])) { opacity: 0.5; }
-  &:where(:hover, :focus-within) { opacity: 1; }
+.film-card {
+  :where(.status-group[data-state="ignore"]) & { opacity: 0.3; }
+  :where(.status-group[data-state="watched"]) & { opacity: 0.5; }
+  :where(.status-group) &:where(:hover, :focus-within) { opacity: 1; }
 }

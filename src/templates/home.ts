@@ -53,7 +53,9 @@ function homePage({ data, fetchedAt }: HomeOptions): string {
 
     return `<section class="date-group">
   <h2 class="date-heading">${escapeHtml(label)}</h2>
-  ${filmCards}
+  <div class="status-group" data-state="unknown">
+    ${filmCards}
+  </div>
 </section>`;
   }).join('\n');
 
