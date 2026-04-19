@@ -43,6 +43,20 @@ function layout({ title, fetchedAt, body }: LayoutOptions): string {
   </div>
   <main>${body}</main>
   <footer><small>This site is not affiliated with Yorck Kinogruppe.</small></footer>
+  <template id="tpl-trakt-user">
+    <img src="" alt="" class="trakt-avatar">
+    <span class="trakt-username"></span>
+    <a href="/auth/trakt/logout" class="trakt-logout">Sign out</a>
+  </template>
+  <template id="tpl-trakt-signin">
+    <a href="" class="trakt-signin">Sign in to Trakt.tv <img src="/images/services/trakt.svg" alt="" class="trakt-signin-icon"></a>
+  </template>
+  <template id="tpl-watchlist-btn-on">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h14v20l-7-4-7 4V2z"/></svg>
+  </template>
+  <template id="tpl-watchlist-btn-off">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 2h14v20l-7-4-7 4V2z"/></svg>
+  </template>
   <script type="module" src="/main.mjs"></script>
   <script type="module" src="/trakt.mjs"></script>
 </body>

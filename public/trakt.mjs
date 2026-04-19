@@ -33,11 +33,16 @@ if (userEl) {
       }
       const user = await userRes.json();
       const avatar = user.images?.avatar?.full;
-      userEl.innerHTML = `
-        ${avatar ? `<img src="${avatar}" alt="" class="trakt-avatar">` : ''}
-        <span class="trakt-username">${user.username}</span>
-        <a href="/auth/trakt/logout" class="trakt-logout">Sign out</a>
-      `;
+      const tpl = /** @type {HTMLTemplateElement} */ (document.getElementById('tpl-trakt-user'));
+      const frag = /** @type {DocumentFragment} */ (tpl.content.cloneNode(true));
+      const avatarImg = frag.querySelector('img');
+      if (avatar) {
+        /** @type {HTMLImageElement} */ (avatarImg).src = avatar;
+      } else {
+        avatarImg?.remove();
+      }
+      /** @type {HTMLElement} */ (frag.querySelector('.trakt-username')).textContent = user.username;
+      userEl.replaceChildren(frag);
     } catch (cause) {
       console.error(new Error('Failed to fetch user data', { cause }));
       showSignIn();
@@ -51,10 +56,13 @@ function showSignIn() {
   if (!userEl || !meta.clientId) return;
   const authorizeUrl = `https://trakt.tv/oauth/authorize?${new URLSearchParams({
     client_id: meta.clientId,
-    redirect_uri: (new URL('/auth/trakt/callback' , window.location.href)).toString(),
+    redirect_uri: (new URL('/auth/trakt/callback', window.location.href)).toString(),
     response_type: 'code',
   })}`;
-  userEl.innerHTML = `<a href="${authorizeUrl}" class="trakt-signin">Sign in to Trakt.tv <img src="/images/services/trakt.svg" alt="" class="trakt-signin-icon"></a>`;
+  const tpl = /** @type {HTMLTemplateElement} */ (document.getElementById('tpl-trakt-signin'));
+  const frag = /** @type {DocumentFragment} */ (tpl.content.cloneNode(true));
+  /** @type {HTMLAnchorElement} */ (frag.querySelector('a')).href = authorizeUrl;
+  userEl.replaceChildren(frag);
 }
 
 // ── Watchlist & Watched ──
@@ -128,9 +136,8 @@ if (accessToken) {
  * @param {boolean} isOnWatchlist
  */
 function updateBookmark(btn, isOnWatchlist) {
-  btn.innerHTML = isOnWatchlist
-    ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 2h14v20l-7-4-7 4V2z"/></svg>'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 2h14v20l-7-4-7 4V2z"/></svg>';
+  const tpl = /** @type {HTMLTemplateElement} */ (document.getElementById(isOnWatchlist ? 'tpl-watchlist-btn-on' : 'tpl-watchlist-btn-off'));
+  btn.replaceChildren(tpl.content.cloneNode(true));
   btn.classList.toggle('watchlist-btn-active', isOnWatchlist);
 }
 
