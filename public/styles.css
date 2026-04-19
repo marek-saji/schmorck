@@ -173,7 +173,7 @@ footer {
 /* ── Banner ── */
 .banner {
   position: sticky;
-  top: 0;
+  bottom: 0;
   z-index: var(--z-banner);
   padding: var(--spacing-sm) var(--spacing-lg);
   background: var(--color-info);

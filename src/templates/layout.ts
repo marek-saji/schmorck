@@ -38,11 +38,11 @@ function layout({ title, fetchedAt, body }: LayoutOptions): string {
     </a>
     <div id="trakt-user"></div>
   </header>
+  <main>${body}</main>
+  <footer><small>This site is not affiliated with Yorck Kinogruppe.</small></footer>
   <div id="banner" class="banner"${fetchedAt ? '' : ' hidden'} data-severity=warning>
     <p id="banner-text">${bannerText}</p>
   </div>
-  <main>${body}</main>
-  <footer><small>This site is not affiliated with Yorck Kinogruppe.</small></footer>
   <template id="tpl-trakt-user">
     <img src="" alt="" class="trakt-avatar">
     <span class="trakt-username"></span>
