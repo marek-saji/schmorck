@@ -244,6 +244,7 @@ footer {
 }
 
 .film-poster-link {
+  position: relative;
   grid-column: 1;
   grid-row: 1;
   align-self: auto;
@@ -254,6 +255,7 @@ footer {
   width: 100%;
   aspect-ratio: 2 / 3;
   object-fit: cover;
+  object-position: top;
   border-radius: var(--radius-sm);
   -webkit-box-reflect: below 0 linear-gradient(transparent 70%, rgba(255, 255, 255, 0.3));
 }
@@ -321,6 +323,21 @@ footer {
   gap: var(--spacing-xs);
 }
 
+.film-card:where([data-watched="true"], [data-ignore="true"]) {
+  .film-poster-link {
+    overflow: hidden;
+  }
+
+  .film-poster {
+    position: absolute;
+    top: 0;
+  }
+
+  .film-meta,
+  .film-synopsis-short {
+    display: none;
+  }
+}
 /* ── Screening Pill ── */
 a.screening {
   text-decoration: none;
@@ -482,6 +499,16 @@ a.screening:hover {
   .film-poster-link {
     grid-row: auto;
     margin: var(--spacing-md) var(--spacing-md) 0;
+  }
+
+  .film-card:where([data-watched="true"], [data-ignore="true"]) {
+    .film-poster-link {
+      max-block-size: 3em;
+    }
+
+    .film-poster {
+      position: static;
+    }
   }
 
   .film-poster {
