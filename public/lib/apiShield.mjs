@@ -257,7 +257,11 @@ function createApiShield({
         body = JSON.parse(body)
       } catch {}
     }
-    console.log('[API]', method, String(url), { ...options, body }, `(took ${performance.now() - startMs}ms)`)
+    const logOptions = { ...options }
+    if (body !== undefined) {
+      logOptions.body = body
+    }
+    console.log('[API]', method, String(url), logOptions, `(took ${performance.now() - startMs}ms)`)
     return response;
   }
 
