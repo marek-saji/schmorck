@@ -32,7 +32,6 @@
   show it as QR code. Use https://dt.in.th/HDRQRCode trick
   Include link to bookings on https://www.yorck.de/en/account/overview
 - change trak status on film page (in general share more of the components)
-- show only cinemas in Berlin
 - Languages and filter by DF/OmU/OemU
 - style up de-emphasised film cards. Either–or:
   - shrink posters of de-emphasised film cards. Don’t break

@@ -8,14 +8,28 @@ import { lookupFilm } from './trakt-client.ts';
 import { createFileStorage } from './lib/storage.ts';
 import { join } from 'node:path';
 
+const IGNORED_CINEAMS = new Set([
+  // City Kinos München
+  '1014',
+]);
+
 const traktStorage = createFileStorage(join(import.meta.dirname, '..', 'storage'));
 
 // ── Cinema mappers ──
 
+function mapCinemaName (name: string): string {
+  switch (name) {
+    case 'Filmtheater am Friedrichshain' :
+      return 'FaF';
+    default:
+      return name.replace(/\sKino$/, '');
+  }
+}
+
 function mapVistaCinema(c: VistaCinema): Cinema {
   return {
     id: c.ID,
-    name: c.Name,
+    name: mapCinemaName(c.Name),
     address: [c.Address1, c.Address2].filter(Boolean).join(', ') || undefined,
     city: c.City,
     latitude: c.Latitude,
@@ -26,7 +40,7 @@ function mapVistaCinema(c: VistaCinema): Cinema {
 function mapYorckCinema(c: YorckCinema): Cinema {
   return {
     id: c.id,
-    name: c.name,
+    name: mapCinemaName(c.name),
     address: [c.address1, c.address2].filter(Boolean).join(', ') || undefined,
     city: c.city || undefined,
     latitude: c.latitude,
@@ -36,6 +50,10 @@ function mapYorckCinema(c: YorckCinema): Cinema {
 
 function mapCinema(c: VistaCinema | YorckCinema): Cinema {
   return 'ID' in c ? mapVistaCinema(c) : mapYorckCinema(c);
+}
+
+function filterCinema(cinema: Cinema) {
+  return !IGNORED_CINEAMS.has(cinema.id);
 }
 
 // ── Film mappers ──
@@ -119,6 +137,10 @@ function mapSession(s: VistaSession | YorckSession): Screening {
   return 'SessionId' in s ? mapVistaSession(s) : mapYorckSession(s);
 }
 
+function filterSession(session: Screening) {
+  return !IGNORED_CINEAMS.has(session.cinemaId);
+}
+
 // ── Unified mapper ──
 
 interface RawApiData {
@@ -140,9 +162,9 @@ function mapApiResponse(raw: RawApiData): ScheduleData {
   ).values())];
 
   return {
-    cinemas: (raw.cinemas ?? raw.appLaunchData?.cinemas ?? []).map(mapCinema),
+    cinemas: (raw.cinemas ?? raw.appLaunchData?.cinemas ?? []).map(mapCinema).filter(filterCinema),
     films: uniqueFilms.map(mapFilm),
-    screenings: raw.sessions.map(mapSession),
+    screenings: raw.sessions.map(mapSession).filter(filterSession),
   };
 }
 
