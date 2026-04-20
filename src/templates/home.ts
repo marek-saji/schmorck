@@ -82,7 +82,7 @@ function filmCard(
     const date = s.showtime.toISOString().slice(0, 10);
     const attrs = s.attributes?.length ? ` ${s.attributes.map(escapeHtml).join(' ')}` : '';
     const href = `https://www.yorck.de/de/films/${escapeHtml(film.slug)}?date=${date}#view_screening_times`;
-    return `<a href="${href}" class="screening"><strong class="screening-time">${time}</strong>${attrs ? `<span class="screening-attrs">${attrs}</span>` : ''}${cinema ? `<span class="screening-cinema">${escapeHtml(cinema.name)}</span>` : ''}</a>`;
+    return `<li><a href="${href}" class="screening"><strong class="screening-time">${time}</strong>${attrs ? `<span class="screening-attrs">${attrs}</span>` : ''}${cinema ? `<span class="screening-cinema">${escapeHtml(cinema.name)}</span>` : ''}</a></li>`;
   }).join('\n');
 
   return `<article class="film-card"${film.traktId ? ` data-trakt-id="${film.traktId}"` : ''}>
@@ -95,9 +95,12 @@ function filmCard(
     </a>
     ${meta ? `<p class="film-meta">${meta}</p>` : ''}
     ${film.synopsis ? `<p class="film-synopsis-short" lang="de">${escapeHtml(film.synopsis)}</p>` : ''}
-    <div class="film-screenings">
-      ${screeningItems}
-    </div>
+    <section class="film-screenings">
+      <h3 class="film-screenings-heading">${screenings.length} screening${screenings.length === 1 ? '' : 's'}</h3>
+      <ol class="film-screenings-list">
+        ${screeningItems}
+      </ol>
+    </section>
   </div>
 </article>`;
 }
