@@ -231,6 +231,7 @@ footer {
 
 /* ── Film Card ── */
 .film-card {
+  position: relative;
   display: grid;
   grid-template-columns: 12.5em 1fr;
   padding: 0;
@@ -256,6 +257,17 @@ footer {
   object-position: top;
   border-radius: var(--radius-sm);
   -webkit-box-reflect: below 0 linear-gradient(transparent 70%, rgba(255, 255, 255, 0.3));
+}
+
+.film-actions {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  gap: var(--spacing-sm);
+  place-items: start;
+  place-content: end;
+  padding: var(--spacing-xs);
 }
 
 .film-body {
@@ -495,7 +507,7 @@ a.screening:hover {
   }
 
   .film-poster-link {
-    grid-row: auto;
+    grid-row: 1;
     margin: var(--spacing-md) var(--spacing-md) 0;
   }
 
@@ -566,29 +578,31 @@ a.screening:hover {
 
 /* ── Watchlist Button ── */
 .watchlist-btn {
-  position: absolute;
-  top: var(--spacing-xs);
-  right: var(--spacing-xs);
   padding: 0;
   border: none;
   background: none;
   cursor: pointer;
   color: var(--color-text-muted);
   transition: color var(--transition-fast);
+
+  &:hover,
+  :where([data-state="watchlist"]) & {
+    color: var(--color-accent);
+  }
 }
 
-.watchlist-btn svg {
+.watchlist-btn__icon {
   width: 1.5em;
   height: 1.5em;
   filter: drop-shadow(0 0 0.15em var(--color-bg));
-}
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
 
-.watchlist-btn-active {
-  color: var(--color-accent);
-}
-
-.watchlist-btn:hover {
-  color: var(--color-accent);
+  :where([data-state="watchlist"]) & {
+    fill: currentColor;
+    stroke: none;
+  }
 }
 
 /* ── Status Group ── */

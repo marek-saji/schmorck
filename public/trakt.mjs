@@ -80,53 +80,48 @@ if (accessToken) {
 
   /** @type {NodeListOf<HTMLElement>} */
   const cards = document.querySelectorAll('.film-card[data-trakt-id]');
+  const actionsTpl = (/** @type {HTMLTemplateElement} */ document.getElementById('tpl-film-actions'));
   for (const card of cards) {
     const traktId = Number(card.dataset.traktId);
 
     // Bookmark button
-    const btn = document.createElement('button');
-    btn.className = 'watchlist-btn';
-    btn.setAttribute('aria-label', 'Toggle watchlist');
-    updateBookmark(btn, watchlistIds.has(traktId));
+    const actions = (/** @type {HTMLDivElement} */ actionsTpl.content).cloneNode(true);
+    const btn = actions.querySelector('[data-action="watchlist"]')
 
     btn.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const isOn = watchlistIds.has(traktId);
-      btn.disabled = true;
 
-      const endpoint = isOn ? '/sync/watchlist/remove' : '/sync/watchlist';
-      const res = await traktFetch(endpoint, {
-        method: 'POST',
-        body: JSON.stringify({ movies: [{ ids: { trakt: traktId } }] }),
-      });
+      if (btn.getAttribute('aria-disabled') !== 'true') {
+        const isOn = watchlistIds.has(traktId);
+        btn.setAttribute('aria-disabled', 'true');
 
-      if (res.ok) {
-        if (isOn) {
-          watchlistIds.delete(traktId);
-        } else {
-          watchlistIds.add(traktId);
+        const endpoint = isOn ? '/sync/watchlist/remove' : '/sync/watchlist';
+        const res = await traktFetch(endpoint, {
+          method: 'POST',
+          body: JSON.stringify({ movies: [{ ids: { trakt: traktId } }] }),
+        });
+
+        if (res.ok) {
+          if (isOn) {
+            watchlistIds.delete(traktId);
+          } else {
+            watchlistIds.add(traktId);
+          }
+          for (const c of /** @type {NodeListOf<HTMLElement>} */ (
+            document.querySelectorAll(`.film-card[data-trakt-id="${traktId}"]`)
+          )) {
+            const dateGroup = /** @type {HTMLElement | null} */ (c.closest('.date-group'));
+            if (dateGroup) organiseBySection(dateGroup, watchlistIds, watchedIds);
+          }
+          clearCache('trakt_watchlist');
         }
-        const nowOnWatchlist = watchlistIds.has(traktId);
-        for (const c of /** @type {NodeListOf<HTMLElement>} */ (
-          document.querySelectorAll(`.film-card[data-trakt-id="${traktId}"]`)
-        )) {
-          const b = c.querySelector('.watchlist-btn');
-          if (b) updateBookmark(/** @type {HTMLButtonElement} */ (b), nowOnWatchlist);
-          const dateGroup = /** @type {HTMLElement | null} */ (c.closest('.date-group'));
-          if (dateGroup) organiseBySection(dateGroup, watchlistIds, watchedIds);
-        }
-        clearCache('trakt_watchlist');
+
+        btn.removeAttribute('aria-disabled');
       }
-
-      btn.disabled = false;
     });
 
-    const posterLink = card.querySelector('.film-poster-link');
-    if (posterLink) {
-      posterLink.style.position = 'relative';
-      posterLink.appendChild(btn);
-    }
+    card.appendChild(actions);
   }
 
   for (const dateGroup of /** @type {NodeListOf<HTMLElement>} */ (
@@ -166,6 +161,16 @@ function organiseBySection(dateGroup, watchlistIds, watchedIds) {
       :                           'new';
   };
 
+  /** @param {HTMLElement} card */
+  function updateActionLabels (card) {
+    const id = Number(card.dataset.traktId);
+    const watchlistBtn = card.querySelector('[data-action="watchlist"]');
+    watchlistBtn?.setAttribute(
+      'aria-label',
+      watchlistIds.has(id) ? watchlistBtn?.dataset.labelAdd : watchlistBtn?.dataset.labelRemove
+    );
+  }
+
   const unknown = dateGroup.querySelector('.status-group[data-state="unknown"]');
   if (unknown) {
     unknown.after(tpl.content.cloneNode(true));
@@ -177,6 +182,7 @@ function organiseBySection(dateGroup, watchlistIds, watchedIds) {
         throw new Error('Failed to find a group to move a card to', { cause: card });
       }
       moveInto(target, card);
+      updateActionLabels(card);
     }
     unknown.remove();
   } else {
@@ -185,19 +191,11 @@ function organiseBySection(dateGroup, watchlistIds, watchedIds) {
     )) {
       const target = dateGroup.querySelector(`.status-group[data-state="${stateFor(card)}"]`);
       if (target && card.parentElement !== target) moveInto(target, card);
+      updateActionLabels(card);
     }
   }
 }
 
-/**
- * @param {HTMLButtonElement} btn
- * @param {boolean} isOnWatchlist
- */
-function updateBookmark(btn, isOnWatchlist) {
-  const tpl = /** @type {HTMLTemplateElement} */ (document.getElementById(isOnWatchlist ? 'tpl-watchlist-btn-on' : 'tpl-watchlist-btn-off'));
-  btn.replaceChildren(tpl.content.cloneNode(true));
-  btn.classList.toggle('watchlist-btn-active', isOnWatchlist);
-}
 
 /**
  * @param {string} path
