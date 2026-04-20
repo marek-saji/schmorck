@@ -1,27 +1,15 @@
 ## Now
 
-- not interested, check–in
-
-## Next
-
-- enter Yorck ID manually and store in localStorage to add option to
-  show it as QR code. Use https://dt.in.th/HDRQRCode trick
-  Include link to bookings on https://www.yorck.de/en/account/overview
-- show only cinemas in Berlin
-- Languages and filter by DF/OmU/OemU
-- fetch trakt.tv state data only for day in viewport
-- re–fetch trakt.tv status
-- style up de-emphasised film cards. Either–or:
-  - shrink posters of de-emphasised film cards. Don’t break
-    single–column layout. Animate with a bounce
-  - set `max-height` to `calc(var(--font-size-lg) + 2 * var(--spacing-md))`.
-    Remember to set title to non-sticky.
-    Animate with a thump.
-  - Hide summary and instead of list of screenings, show just the number
-- order
-  - instead of using CSS `order`, move things in DOM
-  - Decouple `data-*` state from ordering, then we can revert `a438478`
-  - try out: when changing status, update order with view transition
+- fix transition of a poster of watched movie
+- some feedback about loading stuff client–side
+  - logging in
+  - refreshing state (sorting)
+- fetch trakt.tv state data only for day in viewport, or idle, with
+  pausing between days
+- don’t cache trakt.tv status forever
+- add to “skip in cinemas” list and show as “not interested”
+- add “watched” status, incl. “watching now”
+- change “watched” — if it’s ~currently playing, check–in
 - Matching
   - Look into unmatched
   - SOLVE PROBLEM with matching.
@@ -37,6 +25,26 @@
     is an exact match of German title + year. If that doesn’t match, then
     if the release is less than half a year different from current date,
     try the same, but without a year.
+
+## Next
+
+- enter Yorck ID manually and store in localStorage to add option to
+  show it as QR code. Use https://dt.in.th/HDRQRCode trick
+  Include link to bookings on https://www.yorck.de/en/account/overview
+- change trak status on film page (in general share more of the components)
+- show only cinemas in Berlin
+- Languages and filter by DF/OmU/OemU
+- style up de-emphasised film cards. Either–or:
+  - shrink posters of de-emphasised film cards. Don’t break
+    single–column layout. Animate with a bounce
+  - set `max-height` to `calc(var(--font-size-lg) + 2 * var(--spacing-md))`.
+    Remember to set title to non-sticky.
+    Animate with a thump.
+  - Hide summary and instead of list of screenings, show just the number
+- order
+  - instead of using CSS `order`, move things in DOM
+  - Decouple `data-*` state from ordering, then we can revert `a438478`
+  - try out: when changing status, update order with view transition
 - api shield
   - pause between requests, but only a tiny bit, but keep track of how
     many requests has been made and increase the pause when closing to
