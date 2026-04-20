@@ -586,8 +586,15 @@ a.screening:hover {
   transition: color var(--transition-fast);
 
   &:hover,
-  :where([data-state="watchlist"]) & {
+  &:focus,
+  :where([data-state="watchlist"]) &:where([data-action="watchlist"]),
+  :where([data-state="ignore"]) &:where([data-action="ignore"]) {
     color: var(--color-accent);
+  }
+
+  :where([data-state="watched"], [data-state="watchlist"]) &:where([data-action="ignore"]),
+  :where([data-state="ignore"]) &:where([data-action="watchlist"]) {
+    display: none;
   }
 }
 
@@ -599,7 +606,8 @@ a.screening:hover {
   stroke: currentColor;
   stroke-width: 2;
 
-  :where([data-state="watchlist"]) & {
+  :where([data-state="watchlist"]) &:where([data-action="watchlist"]),
+  :where([data-state="ignore"]) &:where([data-action="ignore"]) {
     fill: currentColor;
     stroke: none;
   }

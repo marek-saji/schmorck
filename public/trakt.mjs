@@ -77,20 +77,24 @@ if (accessToken) {
   const watchlistIds = new Set(watchlist?.map((/** @type {any} */ w) => w.movie.ids.trakt) ?? []);
   /** @type {Set<number>} */
   const watchedIds = new Set(watched?.map((/** @type {any} */ w) => w.movie.ids.trakt) ?? []);
+  /** @type {Set<number>} */
+  const ignoredIds = new Set([]);
 
   /** @type {NodeListOf<HTMLElement>} */
   const cards = document.querySelectorAll('.film-card[data-trakt-id]');
-  const actionsTpl = (/** @type {HTMLTemplateElement} */ document.getElementById('tpl-film-actions'));
+  const actionsTpl = /** @type {HTMLTemplateElement} */ (document.getElementById('tpl-film-actions'));
   for (const card of cards) {
     const traktId = Number(card.dataset.traktId);
 
     // Bookmark button
-    const actions = (/** @type {HTMLDivElement} */ actionsTpl.content).cloneNode(true);
-    const btn = actions.querySelector('[data-action="watchlist"]')
+    const actions = /** @type {HTMLElement} */ (actionsTpl.content.cloneNode(true));
+    const watchlistBtn = actions.querySelector('[data-action="watchlist"]')
+    const ignoreBtn = actions.querySelector('[data-action="ignore"]')
 
-    btn.addEventListener('click', async (e) => {
+    watchlistBtn.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
+      const btn = /** @type {HTMLButtonElement} */ (e.currentTarget);
 
       if (btn.getAttribute('aria-disabled') !== 'true') {
         const isOn = watchlistIds.has(traktId);
@@ -112,12 +116,27 @@ if (accessToken) {
             document.querySelectorAll(`.film-card[data-trakt-id="${traktId}"]`)
           )) {
             const dateGroup = /** @type {HTMLElement | null} */ (c.closest('.date-group'));
-            if (dateGroup) organiseBySection(dateGroup, watchlistIds, watchedIds);
+            if (dateGroup) organiseBySection(dateGroup, watchlistIds, watchedIds, ignoredIds);
           }
           clearCache('trakt_watchlist');
         }
 
         btn.removeAttribute('aria-disabled');
+      }
+    });
+
+    ignoreBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const btn = /** @type {HTMLButtonElement} */ (e.currentTarget);
+
+      if (btn.getAttribute('aria-disabled') !== 'true') {
+        try {
+          btn.setAttribute('aria-disabled', 'true');
+
+          alert('Not implemented yet');
+        } finally {
+          btn.removeAttribute('aria-disabled');
+        }
       }
     });
 
@@ -127,7 +146,7 @@ if (accessToken) {
   for (const dateGroup of /** @type {NodeListOf<HTMLElement>} */ (
     document.querySelectorAll('.date-group')
   )) {
-    organiseBySection(dateGroup, watchlistIds, watchedIds);
+    organiseBySection(dateGroup, watchlistIds, watchedIds, ignoredIds);
   }
 }
 
@@ -139,7 +158,9 @@ if (accessToken) {
  */
 function moveInto(parent, node) {
   if ('moveBefore' in parent) {
-    parent.moveBefore(node, null);
+    parent
+      // @ts-ignore
+      .moveBefore(node, null);
   } else {
     parent.append(node);
   }
@@ -149,8 +170,9 @@ function moveInto(parent, node) {
  * @param {HTMLElement} dateGroup
  * @param {Set<number>} watchlistIds
  * @param {Set<number>} watchedIds
+ * @param {Set<number>} ignoredIds
  */
-function organiseBySection(dateGroup, watchlistIds, watchedIds) {
+function organiseBySection(dateGroup, watchlistIds, watchedIds, ignoredIds) {
   const tpl = /** @type {HTMLTemplateElement} */ (document.getElementById('tpl-status-sections'));
 
   /** @param {HTMLElement} card */
@@ -164,10 +186,15 @@ function organiseBySection(dateGroup, watchlistIds, watchedIds) {
   /** @param {HTMLElement} card */
   function updateActionLabels (card) {
     const id = Number(card.dataset.traktId);
-    const watchlistBtn = card.querySelector('[data-action="watchlist"]');
+    const watchlistBtn = /** @type {HTMLElement} */ (card.querySelector('[data-action="watchlist"]'));
     watchlistBtn?.setAttribute(
       'aria-label',
-      watchlistIds.has(id) ? watchlistBtn?.dataset.labelAdd : watchlistBtn?.dataset.labelRemove
+      watchlistIds.has(id) ? watchlistBtn?.dataset.labelRemove : watchlistBtn?.dataset.labelAdd
+    );
+    const ignoreBtn = /** @type {HTMLElement} */ (card.querySelector('[data-action="ignore"]'));
+    ignoreBtn?.setAttribute(
+      'aria-label',
+      ignoredIds.has(id) ? ignoreBtn?.dataset.labelRemove : ignoreBtn?.dataset.labelAdd
     );
   }
 
