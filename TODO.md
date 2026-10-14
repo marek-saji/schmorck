@@ -29,6 +29,9 @@
 ## Next
 
 - mark watchliststed movies that are not playing anymore soon
+- double feature
+  - double feature: a & b
+  - a / b
 - enter Yorck ID manually and store in localStorage to add option to
   show it as QR code. Use https://dt.in.th/HDRQRCode trick
   Include link to bookings on https://www.yorck.de/en/account/overview
